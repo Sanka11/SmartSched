@@ -1,5 +1,7 @@
-/Users/pramodravisanka/Documents/Year 3 Semester 2/ITPM/smartsched/backend/src/main/java/com/smartsched/SmartschedApplication.java
-/Users/pramodravisanka/Documents/Year 3 Semester 2/ITPM/smartsched/backend/src/main/java/com/smartsched/config/SecurityConfig.java
-/Users/pramodravisanka/Documents/Year 3 Semester 2/ITPM/smartsched/backend/src/main/java/com/smartsched/controller/UserController.java
-/Users/pramodravisanka/Documents/Year 3 Semester 2/ITPM/smartsched/backend/src/main/java/com/smartsched/model/User.java
-/Users/pramodravisanka/Documents/Year 3 Semester 2/ITPM/smartsched/backend/src/main/java/com/smartsched/repository/UserRepository.java
+D:\smartsched\SmartSched\backend\src\main\java\com\smartsched\config\SecurityConfig.java
+D:\smartsched\SmartSched\backend\src\main\java\com\smartsched\controller\HomeController.java
+D:\smartsched\SmartSched\backend\src\main\java\com\smartsched\controller\UserController.java
+D:\smartsched\SmartSched\backend\src\main\java\com\smartsched\model\User.java
+D:\smartsched\SmartSched\backend\src\main\java\com\smartsched\repository\UserRepository.java
+D:\smartsched\SmartSched\backend\src\main\java\com\smartsched\service\UserService.java
+D:\smartsched\SmartSched\backend\src\main\java\com\smartsched\SmartschedApplication.java
