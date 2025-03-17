@@ -7,6 +7,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -23,8 +24,19 @@ public class UserService {
         if (userRepository.findByEmail(user.getEmail()).isPresent()) {
             throw new RuntimeException("Email already registered");
         }
-        // Save the user (you may want to hash the password before saving)
-        user.setPassword(passwordEncoder.encode(user.getPassword())); // Encrypt password before saving
+
+        // Set default role and permissions if not provided
+        if (user.getRole() == null) {
+            user.setRole("user");
+        }
+        if (user.getPermissions() == null) {
+            user.setPermissions(List.of("read"));
+        }
+
+        // Hash the password before saving
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+
+        // Save the user
         return userRepository.save(user);
     }
 
@@ -45,5 +57,37 @@ public class UserService {
         return user;
     }
 
-    
+    // Update user role and permissions
+    public User updateUserRoleAndPermissions(String userId, String role, List<String> permissions) {
+        // Find the user by ID
+        Optional<User> optionalUser = userRepository.findById(userId);
+
+        // If user is not found, throw an exception
+        User user = optionalUser.orElseThrow(() -> new RuntimeException("User not found."));
+
+        // Update role if provided
+        if (role != null) {
+            user.setRole(role);
+        }
+
+        // Update permissions if provided
+        if (permissions != null) {
+            user.setPermissions(permissions);
+        }
+
+        // Save the updated user
+        return userRepository.save(user);
+    }
+
+    // Get all users
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+    // Delete a user by ID
+    public void deleteUser(String userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new RuntimeException("User not found with ID: " + userId);
+        }
+        userRepository.deleteById(userId);
+    }
 }

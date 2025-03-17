@@ -11,7 +11,7 @@ const LoginPage = () => {
     e.preventDefault();
     // Add your login logic here
     alert("Login successful!");
-    navigate("/dashboard"); // Redirect to dashboard or another page after login
+    navigate("/user-manager"); // Redirect to dashboard or another page after login
   };
 
   return (
