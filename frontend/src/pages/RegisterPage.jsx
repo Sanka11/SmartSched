@@ -12,6 +12,8 @@ const RegisterPage = () => {
     email: "",
     password: "",
     contact: "",
+    role: "user", // Default role for new users
+    permissions: ["read"], // Default permissions for new users
   });
 
   const navigate = useNavigate();
@@ -90,17 +92,20 @@ const RegisterPage = () => {
                 required
               />
             </div>
+            {/* Hidden input for role and permissions (default values) */}
+            <input type="hidden" name="role" value={user.role} />
+            <input type="hidden" name="permissions" value={user.permissions} />
             <button
               type="submit"
               className="bg-blue-600 text-white px-6 py-3 rounded-lg w-full hover:bg-blue-700 transition-all transform hover:scale-105"
             >
-              Register
+              Sign Up
             </button>
           </form>
           <p className="mt-6 text-gray-600">
             Already have an account?{" "}
             <a href="/login" className="text-blue-600 hover:underline">
-              Login 
+              Sign In 
             </a>
           </p>
         </div>
