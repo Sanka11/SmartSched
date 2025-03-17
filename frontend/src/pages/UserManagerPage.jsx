@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import api from "../services/api";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const UserManagerPage = () => {
   const [users, setUsers] = useState([]);
@@ -7,6 +9,8 @@ const UserManagerPage = () => {
   const [editedRole, setEditedRole] = useState("");
   const [editedPermissions, setEditedPermissions] = useState([]);
   const [activeTab, setActiveTab] = useState("admin");
+  const [filterDate, setFilterDate] = useState("");
+  const [filterRole, setFilterRole] = useState("");
 
   useEffect(() => {
     fetchAllUsers();
@@ -53,22 +57,74 @@ const UserManagerPage = () => {
     try {
       await api.delete(`/api/users/${userId}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`, // Send the JWT token
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
-      fetchAllUsers(); // Refresh the user list
+      fetchAllUsers();
       alert("User deleted successfully!");
     } catch (error) {
       console.error("Error deleting user:", error);
       alert("Failed to delete user.");
     }
   };
+
   const handleCancel = () => {
     setEditingUserId(null);
   };
 
   const filterUsersByRole = (role) => {
     return users.filter((user) => user.role === role);
+  };
+
+  const handleFilter = () => {
+    const filteredUsers = users.filter((user) => {
+      // Convert createdAt to a valid date string
+      const userDate = user.createdAt ? new Date(user.createdAt) : null;
+      const isValidDate = userDate instanceof Date && !isNaN(userDate);
+  
+      // Filter by date if filterDate is provided
+      const matchesDate = filterDate
+        ? isValidDate && userDate.toISOString().split('T')[0] === filterDate
+        : true;
+  
+      // Filter by role if filterRole is provided
+      const matchesRole = filterRole ? user.role === filterRole : true;
+  
+      return matchesDate && matchesRole;
+    });
+  
+    console.log("Filtered Users:", filteredUsers); // Debugging line
+    return filteredUsers;
+  };
+
+  const generatePDF = () => {
+    const filteredUsers = handleFilter();
+    console.log("Filtered Users:", filteredUsers); // Debugging line
+
+    if (filteredUsers.length === 0) {
+      alert("No users found matching the filters.");
+      return;
+    }
+
+    const doc = new jsPDF();
+    doc.text("User Report", 10, 10);
+
+    const tableData = filteredUsers.map((user) => [
+      user.fullName,
+      user.email,
+      user.contact,
+      user.role,
+      (user.permissions || []).join(", "),
+    ]);
+
+    console.log("Table Data:", tableData); // Debugging line
+
+    autoTable(doc, {
+      head: [["Full Name", "Email", "Contact", "Role", "Permissions"]],
+      body: tableData,
+    });
+
+    doc.save("user_report.pdf");
   };
 
   const renderRoleTable = (role) => {
@@ -181,6 +237,35 @@ const UserManagerPage = () => {
             {role.charAt(0).toUpperCase() + role.slice(1)}
           </button>
         ))}
+      </div>
+
+      <div className="mb-8">
+        <input
+          type="date"
+          value={filterDate}
+          onChange={(e) => setFilterDate(e.target.value)}
+          className="border p-2 rounded-lg mr-4"
+        />
+        <select
+          value={filterRole}
+          onChange={(e) => setFilterRole(e.target.value)}
+          className="border p-2 rounded-lg mr-4"
+        >
+          <option value="">All Roles</option>
+          <option value="admin">Admin</option>
+          <option value="lecturer">Lecturer</option>
+          <option value="student">Student</option>
+          <option value="course manager">Course Manager</option>
+          <option value="assignment manager">Assignment Manager</option>
+          <option value="user manager">User Manager</option>
+          <option value="user">user</option>
+        </select>
+        <button
+          onClick={generatePDF}
+          className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600"
+        >
+          Generate PDF Report
+        </button>
       </div>
 
       {["admin", "lecturer", "student", "course manager", "assignment manager", "user manager", "user"].map((role) =>

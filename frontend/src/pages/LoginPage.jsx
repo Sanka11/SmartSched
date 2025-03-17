@@ -1,17 +1,54 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../services/api";
 
 // Import the image you want to use
 import loginImage from "../assets/signuppageimage.jpg"; // Adjust the path to your image
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Add your login logic here
-    alert("Login successful!");
-    navigate("/user-manager"); // Redirect to dashboard or another page after login
+
+    // Basic validation
+    if (!email || !password) {
+      setError("Please enter both email and password.");
+      return;
+    }
+
+    try {
+      // Make a POST request to your backend login endpoint
+      const response = await api.post("/api/users/login", { email, password });
+
+      // Assuming the response contains a 'role' field
+      const userRole = response.data.role;
+
+      // Redirect based on user role
+      switch (userRole) {
+        case "user manager":
+          navigate("/user-manager");
+          break;
+        case "admin":
+          navigate("/admin-dashboard");
+          break;
+        case "employee":
+          navigate("/employee-dashboard");
+          break;
+        default:
+          navigate("/default-dashboard"); // Fallback for unknown roles
+      }
+    } catch (err) {
+      // Handle errors, such as invalid credentials
+      if (err.response && err.response.status === 401) {
+        setError("Invalid email or password. Please try again.");
+      } else {
+        setError("An error occurred. Please try again later.");
+      }
+    }
   };
 
   return (
@@ -22,6 +59,7 @@ const LoginPage = () => {
         <div className="w-full md:w-1/2 p-8">
           <h1 className="text-4xl font-bold text-gray-800 mb-6">Login to SmartSched</h1>
           <p className="text-gray-600 mb-8">Enter your credentials to continue.</p>
+          {error && <p className="text-red-500 mb-4">{error}</p>}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <input
@@ -29,6 +67,8 @@ const LoginPage = () => {
                 placeholder="Email"
                 className="border p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                 required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
             <div>
@@ -37,6 +77,8 @@ const LoginPage = () => {
                 placeholder="Password"
                 className="border p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                 required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
               />
             </div>
             <button
