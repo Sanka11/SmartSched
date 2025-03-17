@@ -7,7 +7,6 @@ import RegisterPage from "./pages/RegisterPage"; // Create RegisterPage later
 import AssignmentDashboard from "./pages/AssignmentDashboard"; // Create AssignmentDashboard later
 import AssignInstructor from "./pages/AssignInstructor"; // Create AssignInstructor later
 import EnrollStudents from "./pages/EnrollStudents";
-import RegisterPage from "./pages/RegisterPage"; // Create RegisterPage later
 
 
 function App() {
@@ -20,7 +19,6 @@ function App() {
       <Route path="/assignmentdashboard" element={<AssignmentDashboard />} />
       <Route path="/assign-instructors" element={<AssignInstructor />} />
       <Route path="/enroll-students" element={<EnrollStudents />} />
-
     </Routes>
   );
 }
