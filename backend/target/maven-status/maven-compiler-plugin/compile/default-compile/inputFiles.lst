@@ -1,0 +1,16 @@
+C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\config\SecurityConfig.java
+C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\controller\CourseController.java
+C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\controller\HomeController.java
+C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\controller\InstructorAssignmentController.java
+C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\controller\UserController.java
+C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\model\Class.java
+C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\model\Course.java
+C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\model\InstructorAssignment.java
+C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\model\User.java
+C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\repository\CourseRepository.java
+C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\repository\InstructorAssignmentRepository.java
+C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\repository\UserRepository.java
+C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\service\CourseService.java
+C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\service\InstructorAssignmentService.java
+C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\service\UserService.java
+C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\SmartschedApplication.java
