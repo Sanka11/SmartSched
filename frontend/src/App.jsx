@@ -5,8 +5,13 @@ import LoginPage from "./pages/LoginPage";  // Create LoginPage later
 import AssignmentDashboard from "./pages/AssignmentDashboard"; // Create AssignmentDashboard later
 import AssignInstructor from "./pages/AssignInstructor"; // Create AssignInstructor later
 import EnrollStudents from "./pages/EnrollStudents";
+
+import CourseListPage from "./pages/CourseList";  //create CourseListPage
+import CourseFormPage from "./pages/CourseForm"; // create CourseFormPage
+
 import RegisterPage from "./pages/RegisterPage"; // Create RegisterPage later
 import UserManagerPage from "./pages/UserManagerPage";
+
 
 
 
@@ -19,8 +24,11 @@ function App() {
       <Route path="/assignmentdashboard" element={<AssignmentDashboard />} />
       <Route path="/assign-instructors" element={<AssignInstructor />} />
       <Route path="/enroll-students" element={<EnrollStudents />} />
+      <Route path="/courses" element={<CourseListPage />} />
+      <Route path="/add-course" element={<CourseFormPage />} />
+      <Route path="/edit-course/:id" element={<CourseFormPage />} />
       <Route path="/user-manager" element={<UserManagerPage />} />
-      
+
     </Routes>
   );
 }
