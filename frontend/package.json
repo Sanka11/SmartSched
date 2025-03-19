@@ -11,13 +11,15 @@
   },
   "dependencies": {
     "@fontsource/ibm-plex-sans-condensed": "^5.2.5",
+    "@heroicons/react": "^2.2.0",
     "axios": "^1.8.3",
     "bcryptjs": "^3.0.2",
-    "jspdf": "^2.5.1",
+    "jspdf": "^2.5.2",
     "jspdf-autotable": "^3.5.28",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-router-dom": "^7.3.0"
+    "react-router-dom": "^7.3.0",
+    "react-toastify": "^11.0.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",

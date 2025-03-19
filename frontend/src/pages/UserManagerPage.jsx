@@ -72,27 +72,13 @@ const UserManagerPage = () => {
     setEditingUserId(null);
   };
 
-  const filterUsersByRole = (role) => {
-    return users.filter((user) => user.role === role);
-  };
-
   const handleFilter = () => {
     const filteredUsers = users.filter((user) => {
-      // Convert createdAt to a valid date string
-      const userDate = user.createdAt ? new Date(user.createdAt) : null;
-      const isValidDate = userDate instanceof Date && !isNaN(userDate);
-  
-      // Filter by date if filterDate is provided
-      const matchesDate = filterDate
-        ? isValidDate && userDate.toISOString().split('T')[0] === filterDate
-        : true;
-  
       // Filter by role if filterRole is provided
       const matchesRole = filterRole ? user.role === filterRole : true;
-  
-      return matchesDate && matchesRole;
+      return matchesRole;
     });
-  
+
     console.log("Filtered Users:", filteredUsers); // Debugging line
     return filteredUsers;
   };
@@ -128,7 +114,7 @@ const UserManagerPage = () => {
   };
 
   const renderRoleTable = (role) => {
-    const filteredUsers = filterUsersByRole(role);
+    const filteredUsers = handleFilter().filter((user) => user.role === role);
 
     return (
       <div key={role} className="mb-8">
