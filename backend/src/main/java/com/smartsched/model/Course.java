@@ -3,6 +3,8 @@ package com.smartsched.model;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+
+
 @Document(collection = "courses")
 public class Course {
     @Id
@@ -16,7 +18,8 @@ public class Course {
     private String description;
 
     // Constructors
-    public Course() {}
+    public Course() {
+    }
 
     public Course(String courseId, String courseName, String courseDuration, int courseFee, String lectures, String contactMail, String description) {
         this.courseId = courseId;

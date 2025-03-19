@@ -15,17 +15,18 @@ public class CourseController {
     @Autowired
     private CourseService courseService;
 
+    // Get All Courses
+    @GetMapping
+    public List<Course> getAllCourses() {
+        return courseService.getAllCourses();
+    }
+
     // Create Course
     @PostMapping
     public Course createCourse(@RequestBody Course course) {
         return courseService.saveCourse(course);
     }
 
-    // Get All Courses
-    @GetMapping
-    public List<Course> getAllCourses() {
-        return courseService.getAllCourses();
-    }
 
     // Get Course by ID
     @GetMapping("/{id}")
