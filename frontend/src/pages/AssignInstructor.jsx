@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
-import { MagnifyingGlassIcon, UserCircleIcon, BookOpenIcon, AcademicCapIcon, XCircleIcon, ExclamationTriangleIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
+import { MagnifyingGlassIcon, UserCircleIcon, BookOpenIcon, AcademicCapIcon, XCircleIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const AssignInstructor = () => {
   const [instructors, setInstructors] = useState([]);
@@ -14,10 +16,6 @@ const AssignInstructor = () => {
   const [classToDelete, setClassToDelete] = useState("");
   const [deleteAction, setDeleteAction] = useState(""); // 'module' or 'class'
 
-  // Toast notification state
-  const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState("");
-
   const modules = ["Math 101", "Physics 101", "Chemistry 101"];
   const classes = ["1", "2", "3"];
 
@@ -25,7 +23,10 @@ const AssignInstructor = () => {
     fetch("http://localhost:8080/api/instructors")
       .then((res) => res.json())
       .then((data) => setInstructors(data))
-      .catch((err) => console.error("Error fetching instructors:", err));
+      .catch((err) => {
+        console.error("Error fetching instructors:", err);
+        toast.error("Failed to fetch instructors");
+      });
   };
 
   useEffect(() => {
@@ -37,33 +38,58 @@ const AssignInstructor = () => {
   );
 
   const handleAssignModule = (moduleName) => {
-    if (!moduleName || !selectedInstructor) return;
+    if (!moduleName || !selectedInstructor) {
+      toast.warning("Please select a module and instructor.");
+      return;
+    }
     fetch(`http://localhost:8080/api/instructors/${selectedInstructor.email}/assignModule/${moduleName}`, {
       method: "PUT",
     })
-      .then(() => {
-        fetchInstructors();
-        setToastMessage("Module assigned successfully!");
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 3000); // Hide toast after 3 seconds
-        setTimeout(() => window.location.reload(), 2000); // Refresh page after 3 seconds
+      .then((res) => res.json())
+      .then((updatedInstructor) => {
+        // Update the instructors state with the updated instructor data
+        setInstructors((prevInstructors) =>
+          prevInstructors.map((instructor) =>
+            instructor.id === updatedInstructor.id ? updatedInstructor : instructor
+          )
+        );
+        // Update the selected instructor if it's the same as the updated one
+        if (selectedInstructor.id === updatedInstructor.id) {
+          setSelectedInstructor(updatedInstructor);
+        }
+        toast.success(`Module "${moduleName}" assigned successfully!`);
       })
-      .catch((err) => console.error("Error assigning module:", err));
+      .catch((err) => {
+        console.error("Error assigning module:", err);
+        toast.error("Failed to assign module");
+      });
   };
 
   const handleAssignClass = (moduleName, className) => {
-    if (!selectedInstructor) return;
+    if (!selectedInstructor || !className) {
+      toast.warning("Please select a class and instructor.");
+      return;
+    }
     fetch(`http://localhost:8080/api/instructors/${selectedInstructor.email}/assignClass/${moduleName}/${className}`, {
       method: "PUT",
     })
       .then(() => {
-        fetchInstructors();
-        setToastMessage("Class assigned successfully!");
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 3000); // Hide toast after 3 seconds
-        setTimeout(() => window.location.reload(), 2000); // Refresh page after 3 seconds
+        setInstructors((prevInstructors) =>
+          prevInstructors.map((instructor) =>
+            instructor.email === selectedInstructor.email
+              ? {
+                  ...instructor,
+                  classes: { ...instructor.classes, [moduleName]: className },
+                }
+              : instructor
+          )
+        );
+        toast.success(`Class "${className}" assigned successfully!`);
       })
-      .catch((err) => console.error("Error assigning class:", err));
+      .catch((err) => {
+        console.error("Error assigning class:", err);
+        toast.error("Failed to assign class");
+      });
   };
 
   const handleDeleteModule = (moduleName) => {
@@ -87,39 +113,51 @@ const AssignInstructor = () => {
         method: "DELETE",
       })
         .then(() => {
-          fetchInstructors();
-          setToastMessage("Module and class deleted successfully!");
-          setShowToast(true);
-          setTimeout(() => setShowToast(false), 3000); // Hide toast after 3 seconds
-          setTimeout(() => window.location.reload(), 3000); // Refresh page after 3 seconds
+          setInstructors((prevInstructors) =>
+            prevInstructors.map((instructor) =>
+              instructor.email === selectedInstructor.email
+                ? { ...instructor, modules: instructor.modules.filter((m) => m !== moduleToDelete) }
+                : instructor
+            )
+          );
+          toast.success(`Module "${moduleToDelete}" and its classes deleted successfully!`);
         })
-        .catch((err) => console.error("Error deleting module:", err));
+        .catch((err) => {
+          console.error("Error deleting module:", err);
+          toast.error("Failed to delete module");
+        });
     } else if (deleteAction === "class") {
       fetch(`http://localhost:8080/api/instructors/${selectedInstructor.email}/deleteClass/${moduleToDelete}/${classToDelete}`, {
         method: "DELETE",
       })
         .then(() => {
-          fetchInstructors();
-          setToastMessage("Class deleted successfully!");
-          setShowToast(true);
-          setTimeout(() => setShowToast(false), 3000); // Hide toast after 3 seconds
-          setTimeout(() => window.location.reload(), 3000); // Refresh page after 3 seconds
+          setInstructors((prevInstructors) =>
+            prevInstructors.map((instructor) =>
+              instructor.email === selectedInstructor.email
+                ? {
+                    ...instructor,
+                    classes: Object.fromEntries(
+                      Object.entries(instructor.classes || {}).filter(
+                        ([mod, cls]) => !(mod === moduleToDelete && cls === classToDelete)
+                      )
+                    ),
+                  }
+                : instructor
+            )
+          );
+          toast.success(`Class "${classToDelete}" deleted successfully!`);
         })
-        .catch((err) => console.error("Error deleting class:", err));
+        .catch((err) => {
+          console.error("Error deleting class:", err);
+          toast.error("Failed to delete class");
+        });
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-8">
-      {/* Toast Notification */}
-      {showToast && (
-        <div className="fixed top-6 right-6 z-50">
-          <div className="bg-green-500 text-white px-6 py-4 rounded-lg shadow-lg flex items-center gap-3 animate-fade-in">
-            <CheckCircleIcon className="w-6 h-6" />
-            <span>{toastMessage}</span>
-          </div>
-        </div>
-      )}
+      {/* Toast Container */}
+      <ToastContainer position="top-right" autoClose={3000} />
 
       {/* Confirmation Modal */}
       {showDeleteModal && (
