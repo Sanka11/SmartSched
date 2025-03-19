@@ -7,7 +7,7 @@ import RegisterPage from "./pages/RegisterPage"; // Create RegisterPage later
 import AssignmentDashboard from "./pages/AssignmentDashboard"; // Create AssignmentDashboard later
 import AssignInstructor from "./pages/AssignInstructor"; // Create AssignInstructor later
 import EnrollStudents from "./pages/EnrollStudents";
-import RegisterPage from "./pages/RegisterPage"; // Create RegisterPage later
+
 
 
 function App() {
