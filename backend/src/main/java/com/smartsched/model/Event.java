@@ -18,5 +18,6 @@ public class Event {
     private String location;
     private String orgCommittee;
     private String description;
+    
 }
 
