@@ -12,6 +12,7 @@ import CourseFormPage from "./pages/CourseForm"; // create CourseFormPage
 import RegisterPage from "./pages/RegisterPage"; // Create RegisterPage later
 import UserManagerPage from "./pages/UserManagerPage";
 import GenerateReportAssignManager from "./pages/GenerateReportAssignManager";
+import CourseClassesPage from "./pages/CourseClassesPage";
 
 
 
@@ -32,6 +33,7 @@ function App() {
       <Route path="/edit-course/:id" element={<CourseFormPage />} />
       <Route path="/user-manager" element={<UserManagerPage />} />
       <Route path="/generate-reports-assign" element={<GenerateReportAssignManager />} />
+      <Route path="/class-assign" element={<CourseClassesPage />} />
 
     </Routes>
   );

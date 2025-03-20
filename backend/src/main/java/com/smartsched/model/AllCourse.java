@@ -13,6 +13,7 @@ public class AllCourse {
     private String name;
     private String description;
     private List<AllModule> modules;
+    private List<AllGroups> groups;
 
     // Getters and Setters
     public String getId() { return id; }
@@ -23,5 +24,7 @@ public class AllCourse {
     public void setDescription(String description) { this.description = description; }
     public List<AllModule> getModules() { return modules; }
     public void setModules(List<AllModule> modules) { this.modules = modules; }
+    public List<AllGroups> getGroups() { return groups; }
+    public void setGroups(List<AllGroups> groups) { this.groups = groups; }
 }
 

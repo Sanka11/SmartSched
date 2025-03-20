@@ -5,6 +5,7 @@ import com.smartsched.model.AllCourse;
 import com.smartsched.service.AllCourseService;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.smartsched.model.AllModule;
+import com.smartsched.model.AllGroups; 
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -52,6 +53,12 @@ public class AllCourseController {
     @GetMapping("/name/{name}/modules")
     public List<AllModule> getModulesByCourseName(@PathVariable String name) {
         return courseService.getModulesByCourseName(name);
+    }
+
+    // Get class by course name
+    @GetMapping("/name/{name}/groups")
+    public List<AllGroups> getGroupsByCourseName(@PathVariable String name) {
+        return courseService.getGroupsByCourseName(name);
     }
 
 }

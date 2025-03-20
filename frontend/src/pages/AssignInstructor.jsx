@@ -18,7 +18,6 @@ const AssignInstructor = () => {
   const [selectedInstructor, setSelectedInstructor] = useState(null);
   const [selectedCourse, setSelectedCourse] = useState("");
   const [selectedModule, setSelectedModule] = useState("");
-  const [selectedClass, setSelectedClass] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchActive, setIsSearchActive] = useState(false);
 
@@ -27,8 +26,6 @@ const AssignInstructor = () => {
   const [moduleToDelete, setModuleToDelete] = useState("");
   const [classToDelete, setClassToDelete] = useState("");
   const [deleteAction, setDeleteAction] = useState(""); // 'module' or 'class'
-
-  const classes = ["Group 1", "Group 2", "Group 3"];
 
   // Fetch instructors and courses on component mount
   useEffect(() => {
@@ -122,22 +119,41 @@ const AssignInstructor = () => {
   };
 
   // Handle class assignment
-  const handleAssignClass = (moduleName, className) => {
-    if (!selectedInstructor || !className) {
+  const handleAssignClass = (moduleName, groupId) => {
+    if (!selectedInstructor || !groupId) {
       toast.warning("Please select a class and instructor.");
       return;
     }
 
-    // Check if the class is already assigned to the module
-    if (selectedInstructor.classes?.[moduleName] === className) {
-      toast.warning(`Class "${className}" is already assigned to this module.`);
+    // Find the group name for the selected groupId
+    const selectedCourse = courses.find((c) =>
+      c.modules?.some((m) => m.title === moduleName)
+    );
+    const selectedGroup = selectedCourse?.groups?.find(
+      (group) => group.groupId === groupId
+    );
+    const groupName = selectedGroup?.groupName;
+
+    if (!groupName) {
+      toast.warning("Invalid group selected.");
       return;
     }
 
+    // Check if the group is already assigned to the module
+    if (selectedInstructor.classes?.[moduleName] === groupId) {
+      toast.warning(`Group "${groupName}" is already assigned to this module.`);
+      return;
+    }
+
+    // Send the groupId to the backend
     fetch(
-      `http://localhost:8080/api/instructors/${selectedInstructor.email}/assignClass/${moduleName}/${className}`,
+      `http://localhost:8080/api/instructors/${selectedInstructor.email}/assignClass/${moduleName}/${groupId}`,
       {
         method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ groupName }), // Optionally send groupName if needed
       }
     )
       .then(() => {
@@ -146,7 +162,7 @@ const AssignInstructor = () => {
           ...selectedInstructor,
           classes: {
             ...selectedInstructor.classes,
-            [moduleName]: className,
+            [moduleName]: groupId, // Store groupId in the state
           },
         };
         setSelectedInstructor(updatedInstructor);
@@ -160,7 +176,7 @@ const AssignInstructor = () => {
           )
         );
 
-        toast.success(`Class "${className}" assigned successfully!`);
+        toast.success(`Class "${groupName}" assigned successfully!`);
       })
       .catch((err) => {
         console.error("Error assigning class:", err);
@@ -177,9 +193,9 @@ const AssignInstructor = () => {
   };
 
   // Handle class deletion
-  const handleDeleteClass = (moduleName, className) => {
+  const handleDeleteClass = (moduleName, groupId) => {
     setModuleToDelete(moduleName);
-    setClassToDelete(className);
+    setClassToDelete(groupId);
     setDeleteAction("class");
     setShowDeleteModal(true);
   };
@@ -252,7 +268,7 @@ const AssignInstructor = () => {
             )
           );
 
-          toast.success(`Class "${classToDelete}" deleted successfully!`);
+          toast.success(`Class deleted successfully!`);
         })
         .catch((err) => {
           console.error("Error deleting class:", err);
@@ -269,13 +285,25 @@ const AssignInstructor = () => {
     return course?.name || "Unknown Course";
   };
 
+  // Get group name for a module
+  const getGroupNameForModule = (moduleName) => {
+    const groupId = selectedInstructor.classes?.[moduleName];
+    if (!groupId) return "No class assigned";
+
+    const selectedCourse = courses.find((c) =>
+      c.modules?.some((m) => m.title === moduleName)
+    );
+    const selectedGroup = selectedCourse?.groups?.find(
+      (group) => group.groupId === groupId
+    );
+    return selectedGroup?.groupName || "Unknown Group";
+  };
+
   // Determine which instructors to display
   const displayedInstructors = isSearchActive ? filteredInstructors : filteredInstructors.slice(0, 3);
 
   return (
-
-
-    <div className=" flex min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
       <SideNav />
       <div className="p-8 w-full">
         {/* Toast Container */}
@@ -293,7 +321,7 @@ const AssignInstructor = () => {
                 <p className="text-gray-600 mb-6">
                   {deleteAction === "module"
                     ? `Are you sure you want to delete the "${moduleToDelete}" module and its associated classes?`
-                    : `Are you sure you want to delete class "${classToDelete}" from "${moduleToDelete}"?`}
+                    : `Are you sure you want to delete the class from "${moduleToDelete}"?`}
                 </p>
                 <div className="flex justify-center gap-4">
                   <button
@@ -348,12 +376,13 @@ const AssignInstructor = () => {
               <div
                 key={instructor.id}
                 onClick={() => setSelectedInstructor(instructor)}
-                className={`group p-6 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer border-2 ${selectedInstructor?.id === instructor.id
-                  ? "border-blue-500"
-                  : selectedInstructor
+                className={`group p-6 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer border-2 ${
+                  selectedInstructor?.id === instructor.id
+                    ? "border-blue-500"
+                    : selectedInstructor
                     ? "hidden"
                     : "border-transparent hover:border-blue-200"
-                  }`}
+                }`}
               >
                 <div className="flex items-start gap-4">
                   <div className="p-3 bg-blue-100 rounded-xl">
@@ -424,12 +453,17 @@ const AssignInstructor = () => {
                           className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                         >
                           <option value="">Select Class</option>
-                          {classes.map((classItem) => (
-                            <option key={classItem} value={classItem}>
-                              {classItem}
-                            </option>
-                          ))}
+                          {courses
+                            .find((c) => c.modules?.some((m) => m.title === module))
+                            ?.groups?.map((group) => (
+                              <option key={group.groupId} value={group.groupId}>
+                                {group.groupName}
+                              </option>
+                            ))}
                         </select>
+                        <span className="text-gray-600">
+                          {getGroupNameForModule(module)}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -493,7 +527,6 @@ const AssignInstructor = () => {
         </div>
       </div>
     </div>
-
   );
 };
 
