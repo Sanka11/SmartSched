@@ -3,6 +3,7 @@ package com.smartsched.service;
 
 import com.smartsched.model.AllCourse;
 import com.smartsched.model.AllModule;
+import com.smartsched.model.AllGroups;
 import com.smartsched.repository.AllCourseRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -51,6 +52,13 @@ public class AllCourseService {
     public List<AllModule> getModulesByCourseName(String name) {
         return courseRepository.findByName(name)
                 .map(AllCourse::getModules)
+                .orElseThrow(() -> new RuntimeException("Course not found"));
+    }
+
+    // Get groups by course name
+    public List<AllGroups> getGroupsByCourseName(String name) {
+        return courseRepository.findByName(name)
+                .map(AllCourse::getGroups)
                 .orElseThrow(() -> new RuntimeException("Course not found"));
     }
 
