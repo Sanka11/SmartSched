@@ -7,7 +7,7 @@ import AssignInstructor from "./pages/AssignInstructor"; // Create AssignInstruc
 import EnrollStudents from "./pages/EnrollStudents";
 
 import CourseListPage from "./pages/CourseList";  //create CourseListPage
-import CourseFormPage from "./pages/CourseForm"; // create CourseFormPage
+import CourseForm from "./pages/CourseForm"; // create CourseForm
 
 import RegisterPage from "./pages/RegisterPage"; // Create RegisterPage later
 import UserManagerPage from "./pages/UserManagerPage";
@@ -25,8 +25,8 @@ function App() {
       <Route path="/assign-instructors" element={<AssignInstructor />} />
       <Route path="/enroll-students" element={<EnrollStudents />} />
       <Route path="/courses" element={<CourseListPage />} />
-      <Route path="/add-course" element={<CourseFormPage />} />
-      <Route path="/edit-course/:id" element={<CourseFormPage />} />
+      <Route path="/add-course" element={<CourseForm />} />
+      <Route path="/edit-course/:id" element={<CourseForm />} /> 
       <Route path="/user-manager" element={<UserManagerPage />} />
 
     </Routes>

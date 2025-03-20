@@ -8,12 +8,6 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  
 });
-// Export API methods- nimanji
- export const createCourse = (course) => axios.post(VITE_BACKEND_URL, course);
-export const getCourses = () => axios.get(VITE_BACKEND_URLL);
-export const getCourseById = (id) => axios.get(`${VITE_BACKEND_URL}/${id}`);
-export const updateCourse = (id, updatedCourse) => axios.put(`${VITE_BACKEND_URL}/${id}`, updatedCourse);
-export const deleteCourse = (id) => axios.delete(`${VITE_BACKEND_URL}/${id}`);  
 
+export default api;
