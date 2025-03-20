@@ -33,7 +33,6 @@ function App() {
       <Route path="/edit-course/:id" element={<CourseFormPage />} />
       <Route path="/user-manager" element={<UserManagerPage />} />
       <Route path="/generate-reports-assign" element={<GenerateReportAssignManager />} />
-      <Route path="/class-assign" element={<CourseClassesPage />} />
 
     </Routes>
   );
