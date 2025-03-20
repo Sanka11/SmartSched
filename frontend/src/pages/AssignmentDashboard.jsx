@@ -1,8 +1,8 @@
 import { useNavigate } from "react-router-dom";
-import { 
-  UserGroupIcon, 
-  PresentationChartBarIcon, 
-  ChartBarIcon 
+import {
+  UserGroupIcon,
+  PresentationChartBarIcon,
+  ChartBarIcon
 } from "@heroicons/react/24/outline";
 
 const AssignmentDashboard = () => {
@@ -24,7 +24,7 @@ const AssignmentDashboard = () => {
         {/* Action Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {/* Student Enrollment Card */}
-          <div 
+          <div
             onClick={() => navigate("/enroll-students")}
             className="group relative bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer"
           >
@@ -49,7 +49,7 @@ const AssignmentDashboard = () => {
           </div>
 
           {/* Instructor Assignment Card */}
-          <div 
+          <div
             onClick={() => navigate("/assign-instructors")}
             className="group relative bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer"
           >
@@ -74,7 +74,7 @@ const AssignmentDashboard = () => {
           </div>
 
           {/* New Generate Reports Card */}
-          <div 
+          <div
             onClick={() => navigate("/generate-reports-assign")}
             className="group relative bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer"
           >
