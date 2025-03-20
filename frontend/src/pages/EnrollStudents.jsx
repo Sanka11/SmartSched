@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { XCircleIcon } from "@heroicons/react/24/outline";
 
 const StudentEnrollment = () => {
   const [students, setStudents] = useState([]);
@@ -9,6 +10,8 @@ const StudentEnrollment = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [courses, setCourses] = useState([]); // Store courses fetched from backend
+  const [selectedCourse, setSelectedCourse] = useState(""); // Track selected course for module enrollment
   const [deleteConfirmation, setDeleteConfirmation] = useState({
     show: false,
     type: "",
@@ -30,6 +33,20 @@ const StudentEnrollment = () => {
     };
 
     fetchStudents();
+  }, []);
+
+  // Fetch courses from the backend
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const response = await axios.get("http://localhost:8080/api/allcourses");
+        setCourses(response.data); // Assuming response.data is an array of courses
+      } catch (err) {
+        console.error("Error fetching courses:", err);
+      }
+    };
+
+    fetchCourses();
   }, []);
 
   // Handle student search
@@ -75,6 +92,7 @@ const StudentEnrollment = () => {
       );
       const updatedStudent = response.data;
       setSelectedStudent(updatedStudent);
+      setSelectedCourse(courseName); // Set the selected course for module enrollment
       toast.success(`Enrolled in course "${courseName}" successfully!`);
     } catch (err) {
       console.error("Error enrolling in course:", err);
@@ -173,24 +191,13 @@ const StudentEnrollment = () => {
 
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-4xl font-bold text-gray-800 flex items-center">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-10 w-10 mr-3 text-blue-600"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-              />
-            </svg>
-            Student Enrollment
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
+              Student Enrollment Management
+            </span>
           </h1>
+          <p className="text-gray-600 text-lg">Enroll courses, modules, and classes to students</p>
         </div>
 
         {/* Search Bar */}
@@ -299,22 +306,9 @@ const StudentEnrollment = () => {
                     </h3>
                     <button
                       onClick={() => showConfirmation("course", courseName, handleRemoveCourse)}
-                      className="px-5 py-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 flex items-center"
+                      className="px-3 py-1.5 text-sm bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors flex items-center gap-2"
                     >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5 mr-2"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                        />
-                      </svg>
+                      <XCircleIcon className="w-4 h-4" />
                       Remove Course
                     </button>
                   </div>
@@ -328,8 +322,10 @@ const StudentEnrollment = () => {
                       className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
                     >
                       <option value="">Select Class</option>
-                      <option value="WD Class 1">WD Class 1</option>
-                      <option value="WD Class 2">WD Class 2</option>
+                      <option value="Group 1">Group 1</option>
+                      <option value="Group 2">Group 2</option>
+                      <option value="Group 3">Group 3</option>
+                 
                     </select>
                   </div>
 
@@ -345,23 +341,10 @@ const StudentEnrollment = () => {
                           <span className="text-gray-700">{moduleName}</span>
                           <button
                             onClick={() => showConfirmation("module", { courseName, moduleName }, handleRemoveModule)}
-                            className="px-3 py-1.5 bg-red-500 text-white rounded-md hover:bg-red-600 flex items-center"
+                            className="px-3 py-1.5 text-sm bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors flex items-center gap-2"
                           >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-4 w-4 mr-1"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                              />
-                            </svg>
-                            Remove
+                            <XCircleIcon className="w-4 h-4" />
+                            Remove Module
                           </button>
                         </div>
                       ))}
@@ -375,8 +358,13 @@ const StudentEnrollment = () => {
                       className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
                     >
                       <option value="">Enroll in Module</option>
-                      <option value="Web Development Basics">Web Development Basics</option>
-                      <option value="Advanced Web Development">Advanced Web Development</option>
+                      {courses
+                        .find((course) => course.name === courseName)
+                        ?.modules?.map((module) => (
+                          <option key={module.moduleId} value={module.title}>
+                            {module.title}
+                          </option>
+                        ))}
                     </select>
                   </div>
                 </div>
@@ -391,9 +379,11 @@ const StudentEnrollment = () => {
                 className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
               >
                 <option value="">Select Course</option>
-                <option value="IT">IT</option>
-                <option value="SE">SE</option>
-                <option value="DS">DS</option>
+                {courses.map((course) => (
+                  <option key={course.id} value={course.name}>
+                    {course.name}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
