@@ -35,6 +35,6 @@ public class EventService {
 
     public String deleteEvent(String eventId) {
         eventRepository.deleteById(eventId);
-        return "Event deleted successfully";
+        return "Event deleted successfully!";
     }
 }
