@@ -7,6 +7,9 @@ import AssignInstructor from "./pages/AssignInstructor"; // Create AssignInstruc
 import EnrollStudents from "./pages/EnrollStudents";
 import RegisterPage from "./pages/RegisterPage"; // Create RegisterPage later
 import UserManagerPage from "./pages/UserManagerPage";
+import GenerateReportAssignManager from "./pages/GenerateReportAssignManager";
+
+
 
 
 function App() {
@@ -19,6 +22,9 @@ function App() {
       <Route path="/assign-instructors" element={<AssignInstructor />} />
       <Route path="/enroll-students" element={<EnrollStudents />} />
       <Route path="/user-manager" element={<UserManagerPage />} />
+      <Route path="/generate-reports-assign" element={<GenerateReportAssignManager />} />
+   
+
       
     </Routes>
   );
