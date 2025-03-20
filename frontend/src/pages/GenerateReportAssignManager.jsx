@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { AcademicCapIcon, UserGroupIcon, UserIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
+import SideNav from "./SideNav";
 
 function GenerateReportAssignManager() {
   const [instructors, setInstructors] = useState([]);
@@ -60,7 +61,10 @@ function GenerateReportAssignManager() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-8">
+    <div className=" flex min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+      <SideNav />
+      <div className="p-8 w-full">
+      
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center gap-3 mb-8">
           <AcademicCapIcon className="h-12 w-12 text-blue-600" />
@@ -218,6 +222,7 @@ function GenerateReportAssignManager() {
           </div>
         )}
       </div>
+    </div>
     </div>
   );
 }

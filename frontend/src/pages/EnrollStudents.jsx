@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { XCircleIcon } from "@heroicons/react/24/outline";
+import { XCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import SideNav from "./SideNav";
 
 const StudentEnrollment = () => {
   const [students, setStudents] = useState([]);
@@ -51,7 +52,7 @@ const StudentEnrollment = () => {
 
   // Handle student search
   const filteredStudents = students.filter((student) =>
-    `${student.firstName} ${student.lastName}`
+    `${student.firstName} ${student.lastName} ${student.email}`
       .toLowerCase()
       .includes(searchQuery.toLowerCase())
   );
@@ -86,6 +87,13 @@ const StudentEnrollment = () => {
       toast.warning("Please select a course to enroll in.");
       return;
     }
+
+    // Check if the course is already assigned
+    if (selectedStudent.courses.includes(courseName)) {
+      toast.warning(`Course "${courseName}" is already assigned to the student.`);
+      return;
+    }
+
     try {
       const response = await axios.post(
         `http://localhost:8080/api/student-enrollments/${selectedStudent.id}/courses?courseName=${courseName}`
@@ -125,6 +133,13 @@ const StudentEnrollment = () => {
       toast.warning("Please select a module to enroll in.");
       return;
     }
+
+    // Check if the module is already assigned for the selected course
+    if (selectedStudent.courseModules[courseName]?.includes(moduleName)) {
+      toast.warning(`Module "${moduleName}" is already assigned to the student for course "${courseName}".`);
+      return;
+    }
+
     try {
       const response = await axios.post(
         `http://localhost:8080/api/student-enrollments/${selectedStudent.id}/courses/${courseName}/modules?moduleName=${moduleName}`
@@ -157,12 +172,14 @@ const StudentEnrollment = () => {
   if (error) return <div className="p-6 text-red-500">Error: {error}</div>;
 
   return (
-    <div className="p-6 bg-gradient-to-br from-blue-50 to-purple-50 min-h-screen">
+    <div className=" flex bg-gradient-to-br from-blue-50 to-purple-50 min-h-screen">
+      <SideNav />
+      <div className="p-8 w-full"> 
       <ToastContainer position="top-right" autoClose={3000} />
 
       {/* Confirmation Modal */}
       {deleteConfirmation.show && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[1000]">
           <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-xl">
             <h3 className="text-lg font-semibold mb-4">Confirm Delete</h3>
             <p className="text-gray-600 mb-6">
@@ -227,15 +244,14 @@ const StudentEnrollment = () => {
 
         {/* Student List */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {filteredStudents.map((student) => (
+          {filteredStudents.slice(0, selectedStudent ? 0 : 3).map((student) => (
             <div
               key={student.id}
               onClick={() => setSelectedStudent(student)}
-              className={`p-6 bg-white rounded-xl shadow-sm cursor-pointer transition-all duration-300 ${
-                selectedStudent?.id === student.id
-                  ? "ring-2 ring-blue-500 transform scale-[1.02]"
-                  : "hover:shadow-md hover:ring-1 hover:ring-gray-100"
-              }`}
+              className={`p-6 bg-white rounded-xl shadow-sm cursor-pointer transition-all duration-300 ${selectedStudent?.id === student.id
+                ? "ring-2 ring-blue-500 transform scale-[1.02]"
+                : "hover:shadow-md hover:ring-1 hover:ring-gray-100"
+                }`}
             >
               <h2 className="text-xl font-semibold text-gray-800 mb-2 flex items-center">
                 <svg
@@ -277,7 +293,13 @@ const StudentEnrollment = () => {
 
         {/* Selected Student Details */}
         {selectedStudent && (
-          <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
+          <div className="bg-white rounded-xl shadow-sm p-6 mb-8 relative z-10">
+            <button
+              onClick={() => setSelectedStudent(null)}
+              className="absolute top-4 right-4 p-2 text-gray-600 hover:text-gray-900"
+            >
+              <XMarkIcon className="h-6 w-6" />
+            </button>
             <h2 className="text-3xl font-bold text-gray-800 mb-6 flex items-center">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -325,7 +347,7 @@ const StudentEnrollment = () => {
                       <option value="Group 1">Group 1</option>
                       <option value="Group 2">Group 2</option>
                       <option value="Group 3">Group 3</option>
-                 
+
                     </select>
                   </div>
 
@@ -389,6 +411,7 @@ const StudentEnrollment = () => {
           </div>
         )}
       </div>
+    </div>
     </div>
   );
 };
