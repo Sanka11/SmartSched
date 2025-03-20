@@ -44,6 +44,7 @@ const CourseForm = ({ courseToEdit, onFormSubmit }) => {
             <input type="email" name="contactMail" placeholder="Contact Email" value={course.contactMail} onChange={handleChange} required />
             <textarea name="description" placeholder="Description" value={course.description} onChange={handleChange} required></textarea>
             <button type="submit">{course.courseId ? "Update Course" : "Add Course"}</button>
+            
         </form>
     );
 };

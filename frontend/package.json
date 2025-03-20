@@ -12,7 +12,7 @@
   "dependencies": {
     "@fontsource/ibm-plex-sans-condensed": "^5.2.5",
     "@heroicons/react": "^2.2.0",
-    "axios": "^1.8.3",
+    "axios": "^1.8.4",
     "bcryptjs": "^3.0.2",
     "jspdf": "^2.5.2",
     "jspdf-autotable": "^3.5.28",
