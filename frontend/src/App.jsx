@@ -33,9 +33,10 @@ function App() {
       <Route path="/edit-course/:id" element={<CourseFormPage />} />
       <Route path="/user-manager" element={<UserManagerPage />} />
       <Route path="/generate-reports-assign" element={<GenerateReportAssignManager />} />
+      <Route path="/assign-classes" element={<CourseClassesPage />} />
 
     </Routes>
-  );
+  );z
 }
 
 export default App;

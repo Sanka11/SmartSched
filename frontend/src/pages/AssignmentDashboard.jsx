@@ -2,7 +2,8 @@ import { useNavigate } from "react-router-dom";
 import {
   UserGroupIcon,
   PresentationChartBarIcon,
-  ChartBarIcon
+  ChartBarIcon,
+  AcademicCapIcon, // Import the new icon for Assign Classes
 } from "@heroicons/react/24/outline";
 
 const AssignmentDashboard = () => {
@@ -18,7 +19,7 @@ const AssignmentDashboard = () => {
               Academic Management
             </span>
           </h1>
-          <p className="text-xl text-gray-600">Manage student enrollments and instructor assignments efficiently</p>
+          <p className="text-xl text-gray-600">Manage student enrollments, instructor assignments, and class allocations efficiently</p>
         </div>
 
         {/* Action Cards */}
@@ -73,7 +74,32 @@ const AssignmentDashboard = () => {
             </div>
           </div>
 
-          {/* New Generate Reports Card */}
+          {/* Assign Class Card */}
+          <div
+            onClick={() => navigate("/assign-classes")}
+            className="group relative bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-yellow-50 to-orange-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"></div>
+            <div className="relative">
+              <div className="mb-6">
+                <div className="w-16 h-16 bg-yellow-100 rounded-xl flex items-center justify-center">
+                  <AcademicCapIcon className="w-8 h-8 text-yellow-600" />
+                </div>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-3">Assign Classes</h2>
+              <p className="text-gray-600 mb-6">
+                Allocate classes to students and manage class schedules
+              </p>
+              <button className="flex items-center text-yellow-600 font-semibold group-hover:text-yellow-700 transition-colors">
+                <span>Assign Classes</span>
+                <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* Generate Reports Card */}
           <div
             onClick={() => navigate("/generate-reports-assign")}
             className="group relative bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer"
