@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { MagnifyingGlassIcon, AcademicCapIcon, BookOpenIcon } from "@heroicons/react/24/outline";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import SideNav from "./SideNav";
 
 const CourseClassesPage = () => {
   // State variables
@@ -146,6 +147,12 @@ const CourseClassesPage = () => {
       return;
     }
 
+    // Validate time
+    if (details.startTime >= details.endTime) {
+      toast.error("Invalid Time: End time must be after start time.");
+      return;
+    }
+
     // Find the course, group, and module
     const course = courses.find((c) => c.groups?.some((g) => g.groupId === groupId));
     const group = course?.groups?.find((g) => g.groupId === groupId);
@@ -225,18 +232,20 @@ const CourseClassesPage = () => {
   }
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-8">
+    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 ">
+      <SideNav />
+      <div className="p-8 w-full">
       <ToastContainer position="top-right" autoClose={3000} />
       <div className="max-w-6xl mx-auto w-full">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-800 mb-2">
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
-              Course and Class Assignments
+              Resource and Class Time Management
             </span>
           </h1>
           <p className="text-gray-600 text-lg">
-            View all courses, groups, modules, and assigned instructors
+            View all courses, groups, modules, and assigned instructors and assign rosource and class time for each module.
           </p>
         </div>
 
@@ -362,7 +371,7 @@ const CourseClassesPage = () => {
                           <div className="mt-3">
                             <button
                               onClick={() => saveGroupDetails(group.groupId, module.title)}
-                              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                              className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg hover:from-blue-600 hover:to-purple-600 transition-colors"
                             >
                               {details.id ? "Update Details" : "Save Details"}
                             </button>
@@ -378,6 +387,8 @@ const CourseClassesPage = () => {
         )}
       </div>
     </div>
+    </div>
+
   );
 };
 
