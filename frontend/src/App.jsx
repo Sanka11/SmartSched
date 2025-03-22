@@ -25,7 +25,7 @@ function App() {
       <Route path="/user-manager" element={<UserManagerPage />} />
 
     </Routes>
-  );z
+  );
 }
 
 export default App;
