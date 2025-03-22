@@ -1,1 +1,3 @@
 com\smartsched\config\SecurityConfig.class
+com\smartsched\SmartschedApplication.class
+com\smartsched\controller\HomeController.class
