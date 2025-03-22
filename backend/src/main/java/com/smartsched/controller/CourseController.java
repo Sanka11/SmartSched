@@ -12,6 +12,7 @@ import java.util.Optional;
 @RequestMapping("/api/courses")
 @CrossOrigin(origins = "*") // Allow frontend access
 public class CourseController {
+    
     @Autowired
     private CourseService courseService;
 

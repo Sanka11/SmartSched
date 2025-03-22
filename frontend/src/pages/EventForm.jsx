@@ -2,46 +2,50 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 
-const CourseForm = () => {
-  const { courseId } = useParams(); // Get courseId from URL
+const EventForm = () => {
+  const { eventId } = useParams(); // Get eventId from URL if updating
   const navigate = useNavigate();
-  const [course, setCourse] = useState({
-    courseName: "",
-    courseDuration: "",
-    courseFee: "",
-    lectures: "",
-    contactMail: "",
+  const [event, setEvent] = useState({
+    eventName: "",
+    eventDate: "",
+    eventTime: "",
+    location: "",
+    orgCommittee: "",
+    eventMode: "",
     description: "",
   });
   const [errors, setErrors] = useState({});
 
-  // Fetch course details if updating
+  // Fetch event details if updating
   useEffect(() => {
-    if (courseId) {
+    if (eventId) {
       axios
-        .get(`http://localhost:8080/api/courses/${courseId}`)
+        .get(`http://localhost:8080/events/${eventId}`)
         .then((response) => {
-          setCourse(response.data);
+          setEvent(response.data);
         })
-        .catch((error) => console.error("Error fetching course:", error));
+        .catch((error) => console.error("Error fetching event:", error));
     }
-  }, [courseId]);
+  }, [eventId]);
 
   // Handle form input changes
   const handleChange = (e) => {
-    setCourse({ ...course, [e.target.name]: e.target.value });
+    setEvent({ ...event, [e.target.name]: e.target.value });
   };
 
   // Validate form inputs
   const validate = () => {
     let formErrors = {};
+    const today = new Date("2025-03-22");
 
-    if (!/^[0-9]+$/.test(course.courseFee) || parseInt(course.courseFee) <= 0) {
-      formErrors.courseFee = "Course fee should be a positive integer.";
+    // Validate date (not in the past)
+    if (new Date(event.eventDate) < today) {
+      formErrors.eventDate = "Event date cannot be in the past.";
     }
 
-    if (!/^[\w.-]+@[\w.-]+\.[a-zA-Z]{2,}$/.test(course.contactMail)) {
-      formErrors.contactMail = "Please enter a valid email address.";
+    // Validate time format (HH:MM)
+    if (!/^([01]?\d|2[0-3]):[0-5]\d$/.test(event.eventTime)) {
+      formErrors.eventTime = "Please enter a valid time (HH:MM).";
     }
 
     setErrors(formErrors);
@@ -54,19 +58,21 @@ const CourseForm = () => {
     if (!validate()) return;
 
     try {
-      if (courseId) {
+      if (eventId) {
+        // Update existing event
         await axios.put(
-          `http://localhost:8080/api/courses/${courseId}`,
-          course
+          `http://localhost:8080/events/update/${eventId}`,
+          event
         );
-        alert("Course updated successfully!");
+        alert("Event updated successfully!");
       } else {
-        await axios.post("http://localhost:8080/api/courses", course);
-        alert("Course created successfully!");
+        // Create new event
+        await axios.post("http://localhost:8080/events/add", event);
+        alert("Event created successfully!");
       }
-      navigate("/courses");
+      navigate("/eventlist");
     } catch (error) {
-      console.error("Error saving course:", error);
+      console.error("Error saving event:", error);
     }
   };
 
@@ -75,100 +81,114 @@ const CourseForm = () => {
       <div className="w-full max-w-2xl bg-white shadow-xl rounded-lg overflow-hidden">
         <div className="p-8 border-b border-gray-200">
           <h2 className="text-3xl font-bold text-gray-900">
-            {courseId ? "Update Course" : "Create Course"}
+            {eventId ? "Update Event" : "Create Event"}
           </h2>
           <p className="text-gray-600 mt-2">
-            {courseId
-              ? "Edit the course details below."
-              : "Fill in the details to create a new course."}
+            {eventId
+              ? "Edit the event details below."
+              : "Fill in the details to create a new event."}
           </p>
         </div>
         <form onSubmit={handleSubmit} className="p-8">
           <div className="space-y-6">
-            {/* Course Name */}
+            {/* Event Name */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Course Name
+                Event Name
               </label>
               <input
                 type="text"
-                name="courseName"
-                placeholder="Enter course name"
-                value={course.courseName}
+                name="eventName"
+                placeholder="Enter event name"
+                value={event.eventName}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                 required
               />
             </div>
 
-            {/* Duration */}
+            {/* Event Date */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Duration
+                Event Date
               </label>
               <input
-                type="text"
-                name="courseDuration"
-                placeholder="Enter course duration"
-                value={course.courseDuration}
+                type="date"
+                name="eventDate"
+                value={event.eventDate}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                 required
               />
-            </div>
-
-            {/* Fee */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Fee
-              </label>
-              <input
-                type="number"
-                name="courseFee"
-                placeholder="Enter course fee"
-                value={course.courseFee}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                required
-              />
-              {errors.courseFee && (
-                <p className="text-sm text-red-500 mt-1">{errors.courseFee}</p>
+              {errors.eventDate && (
+                <p className="text-sm text-red-500 mt-1">{errors.eventDate}</p>
               )}
             </div>
 
-            {/* Number of Lectures */}
+            {/* Event Time */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Number of Lectures
+                Event Time
+              </label>
+              <input
+                type="time"
+                name="eventTime"
+                value={event.eventTime}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                required
+              />
+              {errors.eventTime && (
+                <p className="text-sm text-red-500 mt-1">{errors.eventTime}</p>
+              )}
+            </div>
+
+            {/* Location */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Location
               </label>
               <input
                 type="text"
-                name="lectures"
-                placeholder="Enter number of lectures"
-                value={course.lectures}
+                name="location"
+                placeholder="Enter event location"
+                value={event.location}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                 required
               />
             </div>
 
-            {/* Contact Email */}
+            {/* Organizing Committee */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Contact Email
+                Organizing Committee
               </label>
               <input
-                type="email"
-                name="contactMail"
-                placeholder="Enter contact email"
-                value={course.contactMail}
+                type="text"
+                name="orgCommittee"
+                placeholder="Enter organizing committee"
+                value={event.orgCommittee}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                 required
               />
-              {errors.contactMail && (
-                <p className="text-sm text-red-500 mt-1">{errors.contactMail}</p>
-              )}
+            </div>
+
+            {/* Event Mode */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Event Mode
+              </label>
+              <input
+                type="text"
+                name="eventMode"
+                placeholder="Enter event mode (Online/Offline)"
+                value={event.eventMode}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                required
+              />
             </div>
 
             {/* Description */}
@@ -178,8 +198,8 @@ const CourseForm = () => {
               </label>
               <textarea
                 name="description"
-                placeholder="Enter course description"
-                value={course.description}
+                placeholder="Enter event description"
+                value={event.description}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                 rows="4"
@@ -193,7 +213,7 @@ const CourseForm = () => {
                 type="submit"
                 className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
               >
-                {courseId ? "Update Course" : "Create Course"}
+                {eventId ? "Update Event" : "Create Event"}
               </button>
             </div>
           </div>
@@ -203,4 +223,4 @@ const CourseForm = () => {
   );
 };
 
-export default CourseForm;
+export default EventForm;
