@@ -6,15 +6,9 @@ import AssignmentDashboard from "./pages/AssignmentDashboard"; // Create Assignm
 import AssignInstructor from "./pages/AssignInstructor"; // Create AssignInstructor later
 import EnrollStudents from "./pages/EnrollStudents";
 
-import CourseListPage from "./pages/CourseList";  //create CourseListPage
-import CourseFormPage from "./pages/CourseForm"; // create CourseFormPage
 
 import RegisterPage from "./pages/RegisterPage"; // Create RegisterPage later
 import UserManagerPage from "./pages/UserManagerPage";
-import GenerateReportAssignManager from "./pages/GenerateReportAssignManager";
-import CourseClassesPage from "./pages/CourseClassesPage";
-
-
 
 
 
@@ -28,12 +22,7 @@ function App() {
       <Route path="/assignmentdashboard" element={<AssignmentDashboard />} />
       <Route path="/assign-instructors" element={<AssignInstructor />} />
       <Route path="/enroll-students" element={<EnrollStudents />} />
-      <Route path="/courses" element={<CourseListPage />} />
-      <Route path="/add-course" element={<CourseFormPage />} />
-      <Route path="/edit-course/:id" element={<CourseFormPage />} />
       <Route path="/user-manager" element={<UserManagerPage />} />
-      <Route path="/generate-reports-assign" element={<GenerateReportAssignManager />} />
-      <Route path="/assign-classes" element={<CourseClassesPage />} />
 
     </Routes>
   );z
