@@ -1,8 +1,10 @@
 package com.smartsched.service;
 
+
 import com.smartsched.model.User;
 import com.smartsched.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -16,10 +18,18 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
+
+    //private JwtUtil jwtUtil;
+
+    
     private PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(); // Password encoder
+    private BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
+    
+    
 
     // Register a new user
-    public User registerUser(User user) {
+     // Register a new user
+     public User registerUser(User user) {
         // Check if the email is already registered
         if (userRepository.findByEmail(user.getEmail()).isPresent()) {
             throw new RuntimeException("Email already registered");
@@ -41,21 +51,26 @@ public class UserService {
     }
 
     // Login a user
-    public User loginUser(String email, String password) {
-        // Find the user by email
-        Optional<User> optionalUser = userRepository.findByEmail(email);
-
-        // If user is not found, throw an exception
-        User user = optionalUser.orElseThrow(() -> new RuntimeException("User not found."));
-
-        // Validate password
-        if (!passwordEncoder.matches(password, user.getPassword())) {
-            throw new RuntimeException("Invalid password.");
+    public Optional<User> authenticateUser(String email, String rawPassword) {
+        Optional<User> user = userRepository.findByEmail(email);
+        if (user.isPresent() && passwordEncoder.matches(rawPassword, user.get().getPassword())) {
+            return user;
         }
-
-        // Return the user if password matches
-        return user;
+        return Optional.empty();
     }
+
+
+    public boolean updatePassword(String email, String newPassword) {
+        Optional<User> user = userRepository.findByEmail(email);
+        if (user.isPresent()) {
+            User existingUser = user.get();
+            existingUser.setPassword(newPassword);  // Assuming you have a setter for the password
+            userRepository.save(existingUser);
+            return true;
+        }
+        return false;
+    }
+
 
     // Update user role and permissions
     public User updateUserRoleAndPermissions(String userId, String role, List<String> permissions) {

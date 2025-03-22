@@ -1,12 +1,17 @@
+D:\smartsched\SmartSched\backend\src\main\java\com\smartsched\auth\JwtUtil.java
 D:\smartsched\SmartSched\backend\src\main\java\com\smartsched\config\SecurityConfig.java
 D:\smartsched\SmartSched\backend\src\main\java\com\smartsched\controller\HomeController.java
 D:\smartsched\SmartSched\backend\src\main\java\com\smartsched\controller\InstructorAssignmentController.java
+D:\smartsched\SmartSched\backend\src\main\java\com\smartsched\controller\StudentEnrollmentController.java
 D:\smartsched\SmartSched\backend\src\main\java\com\smartsched\controller\UserController.java
 D:\smartsched\SmartSched\backend\src\main\java\com\smartsched\model\Class.java
 D:\smartsched\SmartSched\backend\src\main\java\com\smartsched\model\InstructorAssignment.java
+D:\smartsched\SmartSched\backend\src\main\java\com\smartsched\model\StudentEnrollment.java
 D:\smartsched\SmartSched\backend\src\main\java\com\smartsched\model\User.java
 D:\smartsched\SmartSched\backend\src\main\java\com\smartsched\repository\InstructorAssignmentRepository.java
+D:\smartsched\SmartSched\backend\src\main\java\com\smartsched\repository\StudentEnrollmentRepository.java
 D:\smartsched\SmartSched\backend\src\main\java\com\smartsched\repository\UserRepository.java
 D:\smartsched\SmartSched\backend\src\main\java\com\smartsched\service\InstructorAssignmentService.java
+D:\smartsched\SmartSched\backend\src\main\java\com\smartsched\service\StudentEnrollmentService.java
 D:\smartsched\SmartSched\backend\src\main\java\com\smartsched\service\UserService.java
 D:\smartsched\SmartSched\backend\src\main\java\com\smartsched\SmartschedApplication.java

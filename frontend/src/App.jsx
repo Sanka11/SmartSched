@@ -1,27 +1,32 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
-import LoginPage from "./pages/LoginPage";  // Create LoginPage later
-import AssignmentDashboard from "./pages/AssignmentDashboard"; // Create AssignmentDashboard later
-import AssignInstructor from "./pages/AssignInstructor"; // Create AssignInstructor later
+import LoginPage from "./pages/LoginPage";
+import AssignmentDashboard from "./pages/AssignmentDashboard";
+import AssignInstructor from "./pages/AssignInstructor";
 import EnrollStudents from "./pages/EnrollStudents";
-import RegisterPage from "./pages/RegisterPage"; // Create RegisterPage later
+import RegisterPage from "./pages/RegisterPage";
 import UserManagerPage from "./pages/UserManagerPage";
-
-
+import UpdatePassword from "./pages/UpdatePassword";
+import UserNav from "./components/UserManagerNavBar"; // Import the Navbar component
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<LandingPage />} />  {/* Default Landing Page */}
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-      <Route path="/assignmentdashboard" element={<AssignmentDashboard />} />
-      <Route path="/assign-instructors" element={<AssignInstructor />} />
-      <Route path="/enroll-students" element={<EnrollStudents />} />
-      <Route path="/user-manager" element={<UserManagerPage />} />
-      
-    </Routes>
+    <div>
+      <Routes>
+        {/* Render Navbar only for these pages */}
+        <Route path="/user-manager" element={<><UserNav /><UserManagerPage /></>} />
+        <Route path="/assignmentdashboard" element={<><AssignmentDashboard /></>} />
+        <Route path="/assign-instructors" element={<><AssignInstructor /></>} />
+        <Route path="/enroll-students" element={<><EnrollStudents /></>} />
+
+        {/* Other routes without the Navbar */}
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/UpdatePassword" element={<UpdatePassword />} />
+      </Routes>
+    </div>
   );
 }
 

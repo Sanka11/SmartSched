@@ -7,8 +7,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/users")
@@ -17,8 +17,8 @@ public class UserController {
 
     @Autowired
     private UserService userService;
+    
 
-    // Register a new user
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody User user) {
         try {
@@ -39,15 +39,15 @@ public class UserController {
 
     // Login a user
     @PostMapping("/login")
-    public ResponseEntity<?> loginUser(@RequestBody User user) {
-        try {
-            User authenticatedUser = userService.loginUser(user.getEmail(), user.getPassword());
-            return new ResponseEntity<>(authenticatedUser, HttpStatus.OK);
-        } catch (RuntimeException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.UNAUTHORIZED);
-        }
+    public String loginUser(@RequestBody User user) {
+        Optional<User> authenticatedUser = userService.authenticateUser(user.getEmail(), user.getPassword());
+        return authenticatedUser.isPresent() ? "Login successful!" : "Invalid email or password.";
     }
 
+
+
+
+    
     // Update user role and permissions (Admin-only endpoint)
     @PutMapping("/{userId}/role")
     @PreAuthorize("hasRole('ADMIN')") // Restrict to admins
@@ -85,6 +85,17 @@ public class UserController {
             return new ResponseEntity<>("User deleted successfully", HttpStatus.OK);
         } catch (RuntimeException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+
+    @PutMapping("/forgot-password")
+    public ResponseEntity<String> updatePassword(@RequestParam String email, @RequestParam String newPassword) {
+        boolean isUpdated = userService.updatePassword(email, newPassword);
+        if (isUpdated) {
+            return ResponseEntity.ok("Password updated successfully");
+        } else {
+            return ResponseEntity.status(400).body("User not found or password update failed");
         }
     }
 }
