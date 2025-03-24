@@ -33,9 +33,6 @@ function App() {
       <Route path="/assign-classes" element={<CourseClassesPage/>} />
       <Route path="/InstructorTimetable" element={<InstructorTimetable/>} />
       <Route path="/CourseGroupTimetable" element={<CourseGroupTimetable/>} />
-
-    </Routes>
-  );
       <Route path="/courses" element={<CourseListPage />} />
       <Route path="/add-course" element={<CourseForm />} />
       <Route path="/update-course/:courseId" element={<CourseForm />} />
