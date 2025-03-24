@@ -124,7 +124,7 @@ const AssignInstructor = () => {
       toast.warning("Please select a class and instructor.");
       return;
     }
-
+  
     // Find the group name for the selected groupId
     const selectedCourse = courses.find((c) =>
       c.modules?.some((m) => m.title === moduleName)
@@ -133,18 +133,28 @@ const AssignInstructor = () => {
       (group) => group.groupId === groupId
     );
     const groupName = selectedGroup?.groupName;
-
+  
     if (!groupName) {
       toast.warning("Invalid group selected.");
       return;
     }
-
-    // Check if the group is already assigned to the module
+  
+    // Check if the group is already assigned to any instructor for this module
+    const isGroupAlreadyAssigned = instructors.some(instructor => {
+      return instructor.classes?.[moduleName] === groupId;
+    });
+  
+    if (isGroupAlreadyAssigned) {
+      toast.warning(`Group "${groupName}" is already assigned to another instructor for this module.`);
+      return;
+    }
+  
+    // Check if the group is already assigned to this instructor's module
     if (selectedInstructor.classes?.[moduleName] === groupId) {
       toast.warning(`Group "${groupName}" is already assigned to this module.`);
       return;
     }
-
+  
     // Send the groupId to the backend
     fetch(
       `http://localhost:8080/api/instructors/${selectedInstructor.email}/assignClass/${moduleName}/${groupId}`,
@@ -153,7 +163,7 @@ const AssignInstructor = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ groupName }), // Optionally send groupName if needed
+        body: JSON.stringify({ groupName }),
       }
     )
       .then(() => {
@@ -166,7 +176,7 @@ const AssignInstructor = () => {
           },
         };
         setSelectedInstructor(updatedInstructor);
-
+  
         // Update the instructors list
         setInstructors((prevInstructors) =>
           prevInstructors.map((instructor) =>
@@ -175,7 +185,7 @@ const AssignInstructor = () => {
               : instructor
           )
         );
-
+  
         toast.success(`Class "${groupName}" assigned successfully!`);
       })
       .catch((err) => {

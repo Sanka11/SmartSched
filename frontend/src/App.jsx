@@ -12,6 +12,8 @@ import UserManagerPage from "./pages/UserManagerPage";
 
 import GenerateReportAssignManager from "./pages/GenerateReportAssignManager";
 import CourseClassesPage from "./pages/CourseClassesPage";
+import InstructorTimetable from "./pages/InstructorTimetable";
+import CourseGroupTimetable from "./pages/CourseGroupTimetable";
 
 
 
@@ -33,6 +35,8 @@ function App() {
 
       <Route path="/generate-reports-assign" element={<GenerateReportAssignManager/>} />
       <Route path="/assign-classes" element={<CourseClassesPage/>} />
+      <Route path="/InstructorTimetable" element={<InstructorTimetable/>} />
+      <Route path="/CourseGroupTimetable" element={<CourseGroupTimetable/>} />
 
     </Routes>
   );
