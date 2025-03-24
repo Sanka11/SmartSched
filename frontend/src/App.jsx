@@ -9,6 +9,8 @@ import RegisterPage from "./pages/RegisterPage"; // Create RegisterPage later
 import UserManagerPage from "./pages/UserManagerPage";
 import GenerateReportAssignManager from "./pages/GenerateReportAssignManager";
 import CourseClassesPage from "./pages/CourseClassesPage";
+import InstructorTimetable from "./pages/InstructorTimetable";
+import CourseGroupTimetable from "./pages/CourseGroupTimetable";
 import CourseListPage from "./pages/CourseList"; //create CourseListPage
 import CourseForm from "./pages/CourseForm"; // create CourseForm
 import ViewCoursePage from "./pages/ViewCoursePage";
@@ -29,9 +31,8 @@ function App() {
       <Route path="/user-manager" element={<UserManagerPage />} />
       <Route path="/generate-reports-assign" element={<GenerateReportAssignManager/>} />
       <Route path="/assign-classes" element={<CourseClassesPage/>} />
-
-    </Routes>
-  );
+      <Route path="/InstructorTimetable" element={<InstructorTimetable/>} />
+      <Route path="/CourseGroupTimetable" element={<CourseGroupTimetable/>} />
       <Route path="/courses" element={<CourseListPage />} />
       <Route path="/add-course" element={<CourseForm />} />
       <Route path="/update-course/:courseId" element={<CourseForm />} />
