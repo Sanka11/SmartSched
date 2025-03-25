@@ -8,7 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
@@ -39,9 +39,16 @@ public class UserController {
 
     // Login a user
     @PostMapping("/login")
-    public String loginUser(@RequestBody User user) {
-        Optional<User> authenticatedUser = userService.authenticateUser(user.getEmail(), user.getPassword());
-        return authenticatedUser.isPresent() ? "Login successful!" : "Invalid email or password.";
+    public ResponseEntity<?> loginUser(@RequestBody Map<String, String> loginRequest) {
+        String email = loginRequest.get("email");
+        String password = loginRequest.get("password");
+
+        try {
+            User user = userService.authenticateUser(email, password);
+            return ResponseEntity.ok(user);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+        }
     }
 
 

@@ -4,8 +4,6 @@ package com.smartsched.service;
 import com.smartsched.model.User;
 import com.smartsched.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.bcrypt.BCrypt;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -18,16 +16,10 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
-
-    //private JwtUtil jwtUtil;
-
-    
-    private PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(); // Password encoder
-    private BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
-    
-    
-
-    // Register a new user
+    @Autowired
+    private PasswordEncoder passwordEncoder;  
+      
+            
      // Register a new user
      public User registerUser(User user) {
         // Check if the email is already registered
@@ -50,15 +42,21 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    // Login a user
-    public Optional<User> authenticateUser(String email, String rawPassword) {
-        Optional<User> user = userRepository.findByEmail(email);
-        if (user.isPresent() && passwordEncoder.matches(rawPassword, user.get().getPassword())) {
-            return user;
+//login
+    public User authenticateUser(String email, String rawPassword) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Compare entered password with hashed password
+        if (!passwordEncoder.matches(rawPassword, user.getPassword())) {
+            throw new RuntimeException("Invalid credentials");
         }
-        return Optional.empty();
+
+        return user; // Return user if authentication is successful
     }
 
+
+//update password   
 
     public boolean updatePassword(String email, String newPassword) {
         Optional<User> user = userRepository.findByEmail(email);
@@ -94,10 +92,12 @@ public class UserService {
         return userRepository.save(user);
     }
 
+
     // Get all users
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
+    
     // Delete a user by ID
     public void deleteUser(String userId) {
         if (!userRepository.existsById(userId)) {
