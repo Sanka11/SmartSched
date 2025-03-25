@@ -1,5 +1,11 @@
 import { useNavigate } from "react-router-dom";
-import { AcademicCapIcon, UserGroupIcon, PresentationChartBarIcon } from "@heroicons/react/24/outline";
+import {
+  UserGroupIcon,
+  PresentationChartBarIcon,
+  ChartBarIcon,
+  AcademicCapIcon,
+  ClockIcon, // Import the new icon for Timetables
+} from "@heroicons/react/24/outline";
 
 const AssignmentDashboard = () => {
   const navigate = useNavigate();
@@ -14,13 +20,13 @@ const AssignmentDashboard = () => {
               Academic Management
             </span>
           </h1>
-          <p className="text-xl text-gray-600">Manage student enrollments and instructor assignments efficiently</p>
+          <p className="text-xl text-gray-600">Manage student enrollments, instructor assignments, and class allocations efficiently</p>
         </div>
 
         {/* Action Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {/* Student Enrollment Card */}
-          <div 
+          <div
             onClick={() => navigate("/enroll-students")}
             className="group relative bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer"
           >
@@ -45,7 +51,7 @@ const AssignmentDashboard = () => {
           </div>
 
           {/* Instructor Assignment Card */}
-          <div 
+          <div
             onClick={() => navigate("/assign-instructors")}
             className="group relative bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer"
           >
@@ -62,6 +68,94 @@ const AssignmentDashboard = () => {
               </p>
               <button className="flex items-center text-green-600 font-semibold group-hover:text-green-700 transition-colors">
                 <span>Assign Instructors</span>
+                <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* Assign Class Card */}
+          <div
+            onClick={() => navigate("/assign-classes")}
+            className="group relative bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-yellow-50 to-orange-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"></div>
+            <div className="relative">
+              <div className="mb-6">
+                <div className="w-16 h-16 bg-yellow-100 rounded-xl flex items-center justify-center">
+                  <AcademicCapIcon className="w-8 h-8 text-yellow-600" />
+                </div>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-3">Assign Classes</h2>
+              <p className="text-gray-600 mb-6">
+                Allocate classes to students and manage class schedules
+              </p>
+              <button className="flex items-center text-yellow-600 font-semibold group-hover:text-yellow-700 transition-colors">
+                <span>Assign Classes</span>
+                <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* Timetable Card */}
+          <div
+            className="group relative bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-red-50 to-pink-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"></div>
+            <div className="relative">
+              <div className="mb-6">
+                <div className="w-16 h-16 bg-red-100 rounded-xl flex items-center justify-center">
+                  <ClockIcon className="w-8 h-8 text-red-600" />
+                </div>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-3">View Timetables</h2>
+              <p className="text-gray-600 mb-6">
+                Access and manage class schedules by instructor or by course
+              </p>
+              <div className="space-y-3">
+                <button 
+                  onClick={() => navigate("/InstructorTimetable")}
+                  className="w-full flex items-center justify-between px-4 py-2 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+                >
+                  <span className="text-red-600 font-medium">By Instructor</span>
+                  <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+                <button 
+                  onClick={() => navigate("/CourseGroupTimetable")}
+                  className="w-full flex items-center justify-between px-4 py-2 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+                >
+                  <span className="text-red-600 font-medium">By Course</span>
+                  <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Generate Reports Card */}
+          <div
+            onClick={() => navigate("/generate-reports-assign")}
+            className="group relative bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-50 to-indigo-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"></div>
+            <div className="relative">
+              <div className="mb-6">
+                <div className="w-16 h-16 bg-purple-100 rounded-xl flex items-center justify-center">
+                  <ChartBarIcon className="w-8 h-8 text-purple-600" />
+                </div>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-3">Generate Reports</h2>
+              <p className="text-gray-600 mb-6">
+                Generate and export detailed academic reports and analytics
+              </p>
+              <button className="flex items-center text-purple-600 font-semibold group-hover:text-purple-700 transition-colors">
+                <span>Generate Reports</span>
                 <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
                 </svg>
