@@ -17,6 +17,9 @@ import ViewCoursePage from "./pages/ViewCoursePage";
 import EventForm from "./pages/EventForm"; //event form  page
 import EventList from "./pages/EventList";
 import EventDetails from "./pages/EventDetails";
+import AddUser from "./pages/AddUser";
+import UserProfile from "./pages/UserProfile";
+
 
 
 function App() {
@@ -29,6 +32,9 @@ function App() {
       <Route path="/assign-instructors" element={<AssignInstructor />} />
       <Route path="/enroll-students" element={<EnrollStudents />} />
       <Route path="/user-manager" element={<UserManagerPage />} />
+      <Route path="/AddUser" element={<AddUser />} />
+      <Route path="/UserProfile" element={<UserProfile />} />
+
       
     </Routes>
   );

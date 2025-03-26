@@ -105,4 +105,28 @@ public class UserService {
         }
         userRepository.deleteById(userId);
     }
+
+    public User addUser(User user) {
+        // Check if email already exists
+        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
+            throw new RuntimeException("Email already exists");
+        }
+    
+        // Set default role if not provided
+        if (user.getRole() == null) {
+            user.setRole("user");
+        }
+        if (user.getPermissions() == null) {
+            user.setPermissions(List.of("read"));
+        }
+    
+        return userRepository.save(user);
+    }
+// Fetch user by ID
+public Optional<User> getUserById(String id) {
+    return userRepository.findById(id);
+}    
+
+
+    
 }

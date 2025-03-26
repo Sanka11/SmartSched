@@ -72,7 +72,7 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-500 to-purple-600">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-200 to-purple-300">
       {/* Container for the form and image */}
       <div className="flex bg-white rounded-xl shadow-2xl overflow-hidden max-w-4xl w-full animate-fade-in">
         {/* Left side - Form */}
