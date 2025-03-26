@@ -1,11 +1,11 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
-import LoginPage from "./pages/LoginPage"; // Create LoginPage later
-import AssignmentDashboard from "./pages/AssignmentDashboard"; // Create AssignmentDashboard later
-import AssignInstructor from "./pages/AssignInstructor"; // Create AssignInstructor later
+import LoginPage from "./pages/LoginPage";
+import AssignmentDashboard from "./pages/AssignmentDashboard";
+import AssignInstructor from "./pages/AssignInstructor";
 import EnrollStudents from "./pages/EnrollStudents";
-import RegisterPage from "./pages/RegisterPage"; // Create RegisterPage later
+import RegisterPage from "./pages/RegisterPage";
 import UserManagerPage from "./pages/UserManagerPage";
 import GenerateReportAssignManager from "./pages/GenerateReportAssignManager";
 import CourseClassesPage from "./pages/CourseClassesPage";
@@ -22,7 +22,7 @@ import AllCourseAndModules from "./pages/AllCourseAndModules";
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<LandingPage />} /> {/* Default Landing Page */}
+      <Route path="/" element={<LandingPage />} />  {/* Default Landing Page */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/assignmentdashboard" element={<AssignmentDashboard />} />
@@ -42,6 +42,7 @@ function App() {
       <Route path="/view-event/:eventId" element={<EventDetails />} />
       <Route path="/update-event/:eventId" element={<EventForm />} />
       <Route path="/AllCourseAndModules" element={<AllCourseAndModules />} />
+      
     </Routes>
   );
 }
