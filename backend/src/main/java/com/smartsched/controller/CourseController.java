@@ -12,7 +12,7 @@ import java.util.Optional;
 @RequestMapping("/api/courses")
 @CrossOrigin(origins = "*") // Allow frontend access
 public class CourseController {
-    
+
     @Autowired
     private CourseService courseService;
 
@@ -22,12 +22,19 @@ public class CourseController {
         return courseService.getAllCourses();
     }
 
-    // Create Course
-    @PostMapping
-    public Course createCourse(@RequestBody Course course) {
-        return courseService.saveCourse(course);
+   // Create Course
+@PostMapping
+public String createCourse(@RequestBody Course course) {
+    // Check if a course with the same customCourseId already exists (only for creation)
+    Optional<Course> existingCourse = courseService.getCourseByCustomCourseId(course.getCustomCourseId());
+
+    if (existingCourse.isPresent()) {
+        return "Course with this Custom Course ID already exists!";
     }
 
+    courseService.saveCourse(course);
+    return "Course created successfully!";
+}
 
     // Get Course by ID
     @GetMapping("/{id}")
@@ -35,23 +42,31 @@ public class CourseController {
         return courseService.getCourseById(id);
     }
 
-    // Update Course
-    @PutMapping("/{id}")
-    public Course updateCourse(@PathVariable String id, @RequestBody Course courseDetails) {
-        Optional<Course> optionalCourse = courseService.getCourseById(id);
-        if (optionalCourse.isPresent()) {
-            Course existingCourse = optionalCourse.get();
-            existingCourse.setCourseName(courseDetails.getCourseName());
-            existingCourse.setCourseDuration(courseDetails.getCourseDuration());
-            existingCourse.setCourseFee(courseDetails.getCourseFee());
-            existingCourse.setLectures(courseDetails.getLectures());
-            existingCourse.setContactMail(courseDetails.getContactMail());
-            existingCourse.setDescription(courseDetails.getDescription());
-            return courseService.saveCourse(existingCourse);
-        } else {
-            throw new RuntimeException("Course not found");
-        }
+    // Get Course by Custom Course ID
+@GetMapping("/custom/{customCourseId}")
+public Optional<Course> getCourseByCustomCourseId(@PathVariable String customCourseId) {
+    return courseService.getCourseByCustomCourseId(customCourseId);
+}
+
+
+   // Update Course
+@PutMapping("/{id}")
+public Course updateCourse(@PathVariable String id, @RequestBody Course courseDetails) {
+    Optional<Course> optionalCourse = courseService.getCourseById(id);
+    if (optionalCourse.isPresent()) {
+        Course existingCourse = optionalCourse.get();
+        // Ensure you are not checking for customCourseId uniqueness here
+        existingCourse.setCourseName(courseDetails.getCourseName());
+        existingCourse.setCourseDuration(courseDetails.getCourseDuration());
+        existingCourse.setCourseFee(courseDetails.getCourseFee());
+        existingCourse.setLectures(courseDetails.getLectures());
+        existingCourse.setContactMail(courseDetails.getContactMail());
+        existingCourse.setDescription(courseDetails.getDescription());
+        return courseService.saveCourse(existingCourse);
+    } else {
+        throw new RuntimeException("Course not found");
     }
+}
 
     // Delete Course
     @DeleteMapping("/{id}")
@@ -60,4 +75,3 @@ public class CourseController {
         return "Course deleted successfully";
     }
 }
-

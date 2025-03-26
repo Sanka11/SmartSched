@@ -6,6 +6,7 @@ const CourseForm = () => {
   const { courseId } = useParams(); // Get courseId from URL
   const navigate = useNavigate();
   const [course, setCourse] = useState({
+    customCourseId: "",
     courseName: "",
     courseDuration: "",
     courseFee: "",
@@ -14,6 +15,8 @@ const CourseForm = () => {
     description: "",
   });
   const [errors, setErrors] = useState({});
+  const [isFocused, setIsFocused] = useState(false); // Track focus state for pop-up effect
+  const [loading, setLoading] = useState(false); // Loading state for form submission
 
   // Fetch course details if updating
   useEffect(() => {
@@ -48,12 +51,28 @@ const CourseForm = () => {
     return Object.keys(formErrors).length === 0;
   };
 
-  // Handle form submission (Create or Update)
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
 
+    setLoading(true); // Set loading to true
     try {
+      // Skip customCourseId validation for update, only check for new courses
+      if (!courseId) {
+        const existingCourse = await axios.get(
+          `http://localhost:8080/api/courses/custom/${course.customCourseId}`
+        );
+
+        if (existingCourse.data) {
+          // If a course with the same customCourseId exists, show error message
+          alert(
+            "A course with this Custom Course ID already exists. Please choose a different ID."
+          );
+          return;
+        }
+      }
+
+      // Proceed with creating or updating the course
       if (courseId) {
         await axios.put(
           `http://localhost:8080/api/courses/${courseId}`,
@@ -64,18 +83,32 @@ const CourseForm = () => {
         await axios.post("http://localhost:8080/api/courses", course);
         alert("Course created successfully!");
       }
+
       navigate("/courses");
     } catch (error) {
       console.error("Error saving course:", error);
+      alert("Error saving course. Please try again.");
+    } finally {
+      setLoading(false); // Set loading to false after request completes
     }
   };
 
+  // Handle focus and blur events for pop-up effect
+  const handleFocus = () => setIsFocused(true);
+  const handleBlur = () => setIsFocused(false);
+
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-      <div className="w-full max-w-2xl bg-white shadow-xl rounded-lg overflow-hidden">
+    <div className="min-h-screen flex items-center justify-end p-8">
+      <div className="w-full max-w-2xl bg-white/90 backdrop-blur-sm shadow-xl rounded-lg overflow-hidden">
         <div className="p-8 border-b border-gray-200">
           <h2 className="text-3xl font-bold text-gray-900">
-            {courseId ? "Update Course" : "Create Course"}
+            {courseId ? (
+              "Update Course"
+            ) : (
+              <span className="bg-blue-100 text-blue-800 px-4 py-2 rounded-lg">
+                Create Course
+              </span>
+            )}
           </h2>
           <p className="text-gray-600 mt-2">
             {courseId
@@ -85,6 +118,28 @@ const CourseForm = () => {
         </div>
         <form onSubmit={handleSubmit} className="p-8">
           <div className="space-y-6">
+            {/* Custom Course ID (read-only for updates) */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Custom Course ID
+              </label>
+              <input
+                type="text"
+                name="customCourseId"
+                placeholder="Enter custom course ID"
+                value={course.customCourseId || ""}
+                onChange={handleChange}
+                onFocus={handleFocus}
+                onBlur={handleBlur}
+                className={`w-full px-4 py-2 border ${
+                  errors.courseFee ? "border-red-500" : "border-gray-300"
+                } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-transform bg-blue-50 ${
+                  isFocused ? "scale-105" : "scale-100"
+                }`}
+                required
+                disabled={!!courseId} // Disable if updating
+              />
+            </div>
             {/* Course Name */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -96,7 +151,11 @@ const CourseForm = () => {
                 placeholder="Enter course name"
                 value={course.courseName}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                onFocus={handleFocus}
+                onBlur={handleBlur}
+                className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-transform bg-blue-50 ${
+                  isFocused ? "scale-105" : "scale-100"
+                }`}
                 required
               />
             </div>
@@ -112,7 +171,11 @@ const CourseForm = () => {
                 placeholder="Enter course duration"
                 value={course.courseDuration}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                onFocus={handleFocus}
+                onBlur={handleBlur}
+                className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-transform bg-blue-50 ${
+                  isFocused ? "scale-105" : "scale-100"
+                }`}
                 required
               />
             </div>
@@ -120,7 +183,7 @@ const CourseForm = () => {
             {/* Fee */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Fee
+                Course Fee
               </label>
               <input
                 type="number"
@@ -128,7 +191,11 @@ const CourseForm = () => {
                 placeholder="Enter course fee"
                 value={course.courseFee}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                onFocus={handleFocus}
+                onBlur={handleBlur}
+                className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-transform bg-blue-50 ${
+                  isFocused ? "scale-105" : "scale-100"
+                }`}
                 required
               />
               {errors.courseFee && (
@@ -147,7 +214,11 @@ const CourseForm = () => {
                 placeholder="Enter number of lectures"
                 value={course.lectures}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                onFocus={handleFocus}
+                onBlur={handleBlur}
+                className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-transform bg-blue-50 ${
+                  isFocused ? "scale-105" : "scale-100"
+                }`}
                 required
               />
             </div>
@@ -163,11 +234,17 @@ const CourseForm = () => {
                 placeholder="Enter contact email"
                 value={course.contactMail}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                onFocus={handleFocus}
+                onBlur={handleBlur}
+                className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-transform bg-blue-50 ${
+                  isFocused ? "scale-105" : "scale-100"
+                }`}
                 required
               />
               {errors.contactMail && (
-                <p className="text-sm text-red-500 mt-1">{errors.contactMail}</p>
+                <p className="text-sm text-red-500 mt-1">
+                  {errors.contactMail}
+                </p>
               )}
             </div>
 
@@ -181,19 +258,27 @@ const CourseForm = () => {
                 placeholder="Enter course description"
                 value={course.description}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                onFocus={handleFocus}
+                onBlur={handleBlur}
+                className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-transform bg-blue-50 ${
+                  isFocused ? "scale-105" : "scale-100"
+                }`}
                 rows="4"
                 required
               />
             </div>
 
-            {/* Submit Button */}
             <div>
               <button
                 type="submit"
                 className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
+                disabled={loading}
               >
-                {courseId ? "Update Course" : "Create Course"}
+                {loading
+                  ? "Saving..."
+                  : courseId
+                  ? "Update Course"
+                  : "Create Course"}
               </button>
             </div>
           </div>

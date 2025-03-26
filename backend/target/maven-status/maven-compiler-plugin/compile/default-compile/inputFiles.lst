@@ -5,6 +5,7 @@ C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\control
 C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\controller\EventController.java
 C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\controller\HomeController.java
 C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\controller\InstructorAssignmentController.java
+C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\controller\ModuleController.java
 C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\controller\StudentEnrollmentController.java
 C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\controller\UserController.java
 C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\model\AllClassAssignment.java
@@ -15,6 +16,7 @@ C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\model\C
 C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\model\Course.java
 C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\model\Event.java
 C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\model\InstructorAssignment.java
+C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\model\Module.java
 C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\model\StudentEnrollment.java
 C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\model\User.java
 C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\repository\AllClassAssignmentRepository.java
@@ -22,6 +24,7 @@ C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\reposit
 C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\repository\CourseRepository.java
 C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\repository\EventRepository.java
 C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\repository\InstructorAssignmentRepository.java
+C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\repository\ModuleRepository.java
 C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\repository\StudentEnrollmentRepository.java
 C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\repository\UserRepository.java
 C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\service\AllClassAssignmentService.java
@@ -29,6 +32,7 @@ C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\service
 C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\service\CourseService.java
 C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\service\EventService.java
 C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\service\InstructorAssignmentService.java
+C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\service\ModuleService.java
 C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\service\StudentEnrollmentService.java
 C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\service\UserService.java
 C:\smartsched\SmartSched\SmartSched\backend\src\main\java\com\smartsched\SmartschedApplication.java
