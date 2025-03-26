@@ -9,6 +9,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/users")
@@ -105,4 +106,25 @@ public class UserController {
             return ResponseEntity.status(400).body("User not found or password update failed");
         }
     }
+
+
+    @PostMapping("/add")
+@PreAuthorize("hasRole('ADMIN')") // Restrict to admins
+public ResponseEntity<?> addUser(@RequestBody User user) {
+    try {
+        User newUser = userService.registerUser(user);
+        return new ResponseEntity<>(newUser, HttpStatus.CREATED);
+    } catch (RuntimeException e) {
+        return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+}
+
+  // Get user profile by ID
+  @GetMapping("/{id}")
+  @PreAuthorize("hasAnyRole('USER', 'ADMIN')") // Authenticated users only
+  public ResponseEntity<?> getUserProfile(@PathVariable String id) {
+      Optional<User> user = userService.getUserById(id);
+      return user.map(ResponseEntity::ok)
+                 .orElseGet(() -> ResponseEntity.notFound().build());
+  }
 }
