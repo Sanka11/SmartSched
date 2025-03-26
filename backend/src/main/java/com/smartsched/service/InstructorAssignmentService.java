@@ -5,8 +5,10 @@ import com.smartsched.repository.InstructorAssignmentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
 import java.util.List;
+import java.util.Optional;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 @Service
 public class InstructorAssignmentService {
@@ -23,40 +25,48 @@ public class InstructorAssignmentService {
     }
 
     public InstructorAssignment saveInstructor(InstructorAssignment instructor) {
+        // Set default empty collections if null
+        if (instructor.getModules() == null) {
+            instructor.setModules(new ArrayList<>());
+        }
+        if (instructor.getClasses() == null) {
+            instructor.setClasses(new HashMap<>());
+        }
         return repository.save(instructor);
     }
 
     public InstructorAssignment assignModule(String email, String module) {
-        Optional<InstructorAssignment> instructor = repository.findByEmail(email);
-        if (instructor.isPresent()) {
-            instructor.get().getModules().add(module); // Assuming modules is a list
-            return repository.save(instructor.get());
+        Optional<InstructorAssignment> instructorOpt = repository.findByEmail(email);
+        if (instructorOpt.isPresent()) {
+            InstructorAssignment instructor = instructorOpt.get();
+            if (!instructor.getModules().contains(module)) {
+                instructor.getModules().add(module);
+                return repository.save(instructor);
+            }
+            return instructor; // Already exists
         }
-        return null;
+        return null; // Instructor not found
     }
 
     public InstructorAssignment assignClass(String email, String module, String className) {
-        Optional<InstructorAssignment> instructor = repository.findByEmail(email);
-        if (instructor.isPresent()) {
-            instructor.get().getClasses().put(module, className); // Assuming classes is a map with module as key
-            return repository.save(instructor.get());
+        Optional<InstructorAssignment> instructorOpt = repository.findByEmail(email);
+        if (instructorOpt.isPresent()) {
+            InstructorAssignment instructor = instructorOpt.get();
+            instructor.getClasses().put(module, className);
+            return repository.save(instructor);
         }
-        return null;
+        return null; // Instructor not found
     }
 
-    // Delete module and its associated class from the instructor
     public boolean deleteModuleAndClass(String email, String module) {
-        Optional<InstructorAssignment> instructor = repository.findByEmail(email);
-        if (instructor.isPresent()) {
-            InstructorAssignment instructorAssignment = instructor.get();
-            // Remove the module
-            instructorAssignment.getModules().remove(module);
-            // Remove the associated class
-            instructorAssignment.getClasses().remove(module);
-
-            repository.save(instructorAssignment);
-            return true; // Successfully deleted
+        Optional<InstructorAssignment> instructorOpt = repository.findByEmail(email);
+        if (instructorOpt.isPresent()) {
+            InstructorAssignment instructor = instructorOpt.get();
+            instructor.getModules().remove(module);
+            instructor.getClasses().remove(module);
+            repository.save(instructor);
+            return true;
         }
-        return false; // Instructor not found or module not present
+        return false;
     }
 }

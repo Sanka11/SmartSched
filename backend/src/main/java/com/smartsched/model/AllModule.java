@@ -3,6 +3,7 @@ package com.smartsched.model;
 
 
 public class AllModule {
+    
     private String moduleId;
     private String title;
     private String description;
