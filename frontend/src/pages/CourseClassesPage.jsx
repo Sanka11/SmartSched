@@ -35,7 +35,7 @@ const CourseClassesPage = () => {
         const coursesResponse = await fetch("http://localhost:8080/api/allcourses");
         const coursesData = await coursesResponse.json();
         setCourses(coursesData);
-
+ 
         // Fetch instructors
         const instructorsResponse = await fetch("http://localhost:8080/api/instructors");
         const instructorsData = await instructorsResponse.json();
