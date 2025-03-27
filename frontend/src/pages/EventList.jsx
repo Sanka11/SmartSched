@@ -14,7 +14,7 @@ const EventListPage = () => {
 
   const fetchEvents = () => {
     axios
-      .get("http://localhost:8080/events/all")
+      .get("http://localhost:8080/api/events/all")
       .then((response) => {
         setEvents(response.data);
       })
@@ -25,7 +25,7 @@ const EventListPage = () => {
   const handleDelete = async (eventId) => {
     if (window.confirm("Are you sure you want to delete this event?")) {
       try {
-        await axios.delete(`http://localhost:8080/events/delete/${eventId}`);
+        await axios.delete(`http://localhost:8080/api/events/delete/${eventId}`);
         alert("Event deleted successfully!");
         fetchEvents(); // Refresh the event list after deletion
       } catch (error) {

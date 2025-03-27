@@ -7,4 +7,3 @@ import com.smartsched.model.Event;
 public interface EventRepository extends MongoRepository<Event, String> {
 
 }
-

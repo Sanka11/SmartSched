@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import java.util.List;
 @CrossOrigin(origins = "*") // Allow requests from any origin
 @RestController
-@RequestMapping("/events")
+@RequestMapping("/api/events")
 public class EventController {
     @Autowired
     private EventService eventService;
