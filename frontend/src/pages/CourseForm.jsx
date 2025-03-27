@@ -106,7 +106,7 @@ const CourseForm = () => {
               "Update Course"
             ) : (
               <span className="bg-blue-100 text-blue-800 px-4 py-2 rounded-lg">
-                Create Course
+                Create New Course
               </span>
             )}
           </h2>
