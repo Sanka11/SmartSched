@@ -11,8 +11,8 @@ const StudentEnrollment = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [courses, setCourses] = useState([]); // Store courses fetched from backend
-  const [selectedCourse, setSelectedCourse] = useState(""); // Track selected course for module enrollment
+  const [courses, setCourses] = useState([]);
+  const [groups, setGroups] = useState([]); // State to store groups for the selected course
   const [deleteConfirmation, setDeleteConfirmation] = useState({
     show: false,
     type: "",
@@ -41,7 +41,7 @@ const StudentEnrollment = () => {
     const fetchCourses = async () => {
       try {
         const response = await axios.get("http://localhost:8080/api/allcourses");
-        setCourses(response.data); // Assuming response.data is an array of courses
+        setCourses(response.data);
       } catch (err) {
         console.error("Error fetching courses:", err);
       }
@@ -100,7 +100,7 @@ const StudentEnrollment = () => {
       );
       const updatedStudent = response.data;
       setSelectedStudent(updatedStudent);
-      setSelectedCourse(courseName); // Set the selected course for module enrollment
+      setSelectedCourse(courseName);
       toast.success(`Enrolled in course "${courseName}" successfully!`);
     } catch (err) {
       console.error("Error enrolling in course:", err);
@@ -109,23 +109,37 @@ const StudentEnrollment = () => {
   };
 
   // Handle class assignment
-  const handleAssignClass = async (courseName, className) => {
-    if (!className) {
-      toast.warning("Please select a class to assign.");
-      return;
-    }
-    try {
-      const response = await axios.put(
-        `http://localhost:8080/api/student-enrollments/${selectedStudent.id}/courses/${courseName}/class?className=${className}`
-      );
+const handleAssignClass = async (courseName, groupId) => {
+  if (!groupId) {
+    toast.warning("Please select a class to assign.");
+    return;
+  }
+
+  try {
+    const response = await axios.put(
+      `http://localhost:8080/api/student-enrollments/${selectedStudent.id}/courses/${courseName}/class?className=${groupId}`
+    );
+
+    if (response.status === 200) {
       const updatedStudent = response.data;
       setSelectedStudent(updatedStudent);
-      toast.success(`Class "${className}" assigned successfully!`);
-    } catch (err) {
-      console.error("Error assigning class:", err);
-      toast.error("Failed to assign class");
+      // Find the group name to display in the success message
+      const group = groups.find(g => g.groupId === groupId);
+      toast.success(`Class "${group?.groupName || groupId}" assigned successfully!`);
+    } else {
+      toast.error("Failed to assign class: Unexpected response from the server.");
     }
-  };
+  } catch (err) {
+    console.error("Error assigning class:", err);
+    if (err.response) {
+      toast.error(`Failed to assign class: ${err.response.data.message || err.response.statusText}`);
+    } else if (err.request) {
+      toast.error("Failed to assign class: No response from the server.");
+    } else {
+      toast.error("Failed to assign class: An unexpected error occurred.");
+    }
+  }
+};
 
   // Handle module enrollment
   const handleEnrollModule = async (courseName, moduleName) => {
@@ -258,7 +272,15 @@ const StudentEnrollment = () => {
             {filteredStudents.slice(0, selectedStudent ? 0 : 3).map((student) => (
               <div
                 key={student.id}
-                onClick={() => setSelectedStudent(student)}
+                onClick={() => {
+                  setSelectedStudent(student);
+                  // Fetch groups for the first course of the selected student
+                  const courseName = student.courses[0];
+                  const selectedCourse = courses.find((course) => course.name === courseName);
+                  if (selectedCourse) {
+                    setGroups(selectedCourse.groups || []);
+                  }
+                }}
                 className={`p-6 bg-white rounded-xl shadow-sm cursor-pointer transition-all duration-300 ${selectedStudent?.id === student.id
                   ? "ring-2 ring-blue-500 transform scale-[1.02]"
                   : "hover:shadow-md hover:ring-1 hover:ring-gray-100"
@@ -347,19 +369,29 @@ const StudentEnrollment = () => {
                     </div>
 
                     {/* Class Assignment */}
-                    <div className="mb-6">
-                      <label className="block text-gray-700 mb-2">Assigned Class:</label>
-                      <select
-                        value={selectedStudent.courseClasses[courseName] || ""}
-                        onChange={(e) => handleAssignClass(courseName, e.target.value)}
-                        className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
-                      >
-                        <option value="">Select Class</option>
-                        <option value="Group 1">Group 1</option>
-                        <option value="Group 2">Group 2</option>
-                        <option value="Group 3">Group 3</option>
-                      </select>
-                    </div>
+<div className="mb-6">
+  <label className="block text-gray-700 mb-2">Assigned Class:</label>
+  <select
+    value={selectedStudent.courseClasses[courseName] || ""}
+    onChange={(e) => handleAssignClass(courseName, e.target.value)}
+    className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+  >
+    <option value="">Select Class</option>
+    {groups.map((group) => (
+      <option key={group.groupId} value={group.groupId}>
+        {group.groupName}
+      </option>
+    ))}
+  </select>
+  <div className="text-gray-700 mt-2">
+    Assigned Class:{" "}
+    {(() => {
+      const classId = selectedStudent.courseClasses[courseName];
+      const group = groups.find(g => g.groupId === classId);
+      return group ? group.groupName : classId || "Not assigned";
+    })()}
+  </div>
+</div>
 
                     {/* Module Management */}
                     <div className="mb-6">

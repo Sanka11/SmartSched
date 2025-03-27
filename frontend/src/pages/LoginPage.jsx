@@ -1,89 +1,99 @@
 import React, { useState } from "react";
+import api from "../services/api"; // Axios API instance
 import { useNavigate } from "react-router-dom";
-import api from "../services/api";
 
-// Import the image you want to use
-import loginImage from "../assets/signuppageimage.jpg"; // Adjust the path to your image
+// Import the image
+import loginImage from "../assets/signuppageimage.jpg";
+
+// Import icons
+import { FaEnvelope, FaLock } from "react-icons/fa";
 
 const LoginPage = () => {
+  const [credentials, setCredentials] = useState({
+    email: "",
+    password: "",
+  });
+  const [errorMessage, setErrorMessage] = useState(""); // Store error messages
+
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+
+  const handleChange = (e) => {
+    setCredentials({ ...credentials, [e.target.name]: e.target.value });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Basic validation
-    if (!email || !password) {
-      setError("Please enter both email and password.");
-      return;
-    }
-
     try {
-      // Make a POST request to your backend login endpoint
-      const response = await api.post("/api/users/login", { email, password });
+      const response = await api.post("/api/users/login", credentials); // Updated endpoint
+      console.log("User logged in:", response.data);
+      
+      alert("Login successful!");
 
-      // Assuming the response contains a 'role' field
-      const userRole = response.data.role;
+      // Store user data if needed (e.g., authentication token)
+      localStorage.setItem("user", JSON.stringify(response.data));
 
       // Redirect based on user role
-      switch (userRole) {
-        case "user manager":
-          navigate("/user-manager");
-          break;
-        case "admin":
-          navigate("/admin-dashboard");
-          break;
-        case "employee":
-          navigate("/employee-dashboard");
-          break;
-        default:
-          navigate("/default-dashboard"); // Fallback for unknown roles
+      const userRole = response.data.role; // Assuming response contains role
+      if (userRole === "admin") {
+        navigate("/admin-dashboard");
+      } else if (userRole === "user-manager") {
+        navigate("/user-manager");
+      } else if (userRole === "student") {
+        navigate("/student");
       }
-    } catch (err) {
-      // Handle errors, such as invalid credentials
-      if (err.response && err.response.status === 401) {
-        setError("Invalid email or password. Please try again.");
-      } else {
-        setError("An error occurred. Please try again later.");
+      else if (userRole === "assignment manager") {
+        navigate("/assignment manager");
+      }else if (userRole === "course manager") {
+        navigate("/course manager");
       }
+      else {
+        navigate("/dashboard");
+      }
+    } catch (error) {
+      console.error("Error logging in:", error);
+      setErrorMessage(error.response?.data || "Invalid email or password.");
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r ">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-200 to-purple-300">
       {/* Container for the form and image */}
-      <div className="flex bg-white rounded-xl shadow-2xl overflow-hidden max-w-4xl w-full">
+      <div className="flex bg-white rounded-xl shadow-2xl overflow-hidden max-w-4xl w-full animate-fade-in">
         {/* Left side - Form */}
         <div className="w-full md:w-1/2 p-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-6">Login to SmartSched</h1>
-          <p className="text-gray-600 mb-8">Enter your credentials to continue.</p>
-          {error && <p className="text-red-500 mb-4">{error}</p>}
+          <h1 className="text-4xl font-bold text-gray-800 mb-6">Welcome Back!</h1>
+          <p className="text-gray-600 mb-4">Sign in to continue to SmartSched.</p>
+
+          {errorMessage && <p className="text-red-500 mb-4">{errorMessage}</p>} {/* Display error messages */}
+
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
+            <div className="relative">
+              <FaEnvelope className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
                 type="email"
+                name="email"
                 placeholder="Email"
-                className="border p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                className="border p-3 pl-10 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                value={credentials.email}
+                onChange={handleChange}
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
-            <div>
+            <div className="relative">
+              <FaLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
                 type="password"
+                name="password"
                 placeholder="Password"
-                className="border p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                className="border p-3 pl-10 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                value={credentials.password}
+                onChange={handleChange}
                 required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
               />
             </div>
             <button
               type="submit"
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg w-full hover:bg-blue-700 transition-all transform hover:scale-105"
+              className="bg-blue-600 text-white px-6 py-3 rounded-lg w-full hover:bg-blue-700 transition-all transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               Sign In
             </button>

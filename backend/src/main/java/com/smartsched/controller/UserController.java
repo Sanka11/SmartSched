@@ -7,8 +7,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/users")
@@ -17,8 +18,8 @@ public class UserController {
 
     @Autowired
     private UserService userService;
+    
 
-    // Register a new user
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody User user) {
         try {
@@ -39,15 +40,22 @@ public class UserController {
 
     // Login a user
     @PostMapping("/login")
-    public ResponseEntity<?> loginUser(@RequestBody User user) {
+    public ResponseEntity<?> loginUser(@RequestBody Map<String, String> loginRequest) {
+        String email = loginRequest.get("email");
+        String password = loginRequest.get("password");
+
         try {
-            User authenticatedUser = userService.loginUser(user.getEmail(), user.getPassword());
-            return new ResponseEntity<>(authenticatedUser, HttpStatus.OK);
+            User user = userService.authenticateUser(email, password);
+            return ResponseEntity.ok(user);
         } catch (RuntimeException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.UNAUTHORIZED);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
         }
     }
 
+
+
+
+    
     // Update user role and permissions (Admin-only endpoint)
     @PutMapping("/{userId}/role")
     @PreAuthorize("hasRole('ADMIN')") // Restrict to admins
@@ -87,4 +95,36 @@ public class UserController {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
+
+
+    @PutMapping("/forgot-password")
+    public ResponseEntity<String> updatePassword(@RequestParam String email, @RequestParam String newPassword) {
+        boolean isUpdated = userService.updatePassword(email, newPassword);
+        if (isUpdated) {
+            return ResponseEntity.ok("Password updated successfully");
+        } else {
+            return ResponseEntity.status(400).body("User not found or password update failed");
+        }
+    }
+
+
+    @PostMapping("/add")
+@PreAuthorize("hasRole('ADMIN')") // Restrict to admins
+public ResponseEntity<?> addUser(@RequestBody User user) {
+    try {
+        User newUser = userService.registerUser(user);
+        return new ResponseEntity<>(newUser, HttpStatus.CREATED);
+    } catch (RuntimeException e) {
+        return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+}
+
+  // Get user profile by ID
+  @GetMapping("/{id}")
+  @PreAuthorize("hasAnyRole('USER', 'ADMIN')") // Authenticated users only
+  public ResponseEntity<?> getUserProfile(@PathVariable String id) {
+      Optional<User> user = userService.getUserById(id);
+      return user.map(ResponseEntity::ok)
+                 .orElseGet(() -> ResponseEntity.notFound().build());
+  }
 }
