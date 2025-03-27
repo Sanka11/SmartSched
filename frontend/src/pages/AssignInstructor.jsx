@@ -61,9 +61,11 @@ const AssignInstructor = () => {
       });
   }, []);
 
-  // Filter users based on search query
-  const filteredUsers = users.filter((user) =>
-    user.fullName.toLowerCase().includes(searchQuery.toLowerCase())
+  // Filter users based on search query and role
+  const filteredUsers = users.filter(
+    (user) =>
+      user.role === "lecturer" &&
+      user.fullName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Handle search input change
@@ -71,6 +73,9 @@ const AssignInstructor = () => {
     setSearchQuery(e.target.value);
     setIsSearchActive(e.target.value.length > 0);
   };
+
+  // Determine which users to display
+  const displayedUsers = isSearchActive ? filteredUsers : filteredUsers.slice(0, 3);
 
   // Handle user selection
   const handleUserSelect = (user) => {
@@ -354,9 +359,6 @@ const AssignInstructor = () => {
     );
     return selectedGroup?.groupName || "Unknown Group";
   };
-
-  // Determine which users to display
-  const displayedUsers = isSearchActive ? filteredUsers : filteredUsers.slice(0, 3);
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">

@@ -18,6 +18,7 @@ import EventForm from "./pages/EventForm"; //event form  page
 import EventList from "./pages/EventList";
 import EventDetails from "./pages/EventDetails";
 import AllCourseAndModules from "./pages/AllCourseAndModules";
+import InstructorDashboard from "./pages/InstructorDashboard"; 
 
 function App() {
   return (
@@ -42,6 +43,7 @@ function App() {
       <Route path="/view-event/:eventId" element={<EventDetails />} />
       <Route path="/update-event/:eventId" element={<EventForm />} />
       <Route path="/AllCourseAndModules" element={<AllCourseAndModules />} />
+      <Route path="/InstructorDashboard" element={<InstructorDashboard />} />
       
     </Routes>
   );

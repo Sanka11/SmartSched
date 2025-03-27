@@ -49,7 +49,6 @@ function AllCourseAndModules() {
   const handleInputChange = (e, setter) => {
     const { name, value } = e.target;
     
-    // Special handling for course duration to ensure 2 digits max
     if (name === 'courseDuration') {
       if (value === '' || (value.length <= 2 && /^\d*$/.test(value))) {
         setter(prev => ({ ...prev, [name]: value }));
@@ -127,19 +126,14 @@ function AllCourseAndModules() {
     
     try {
       if (editingCourseId) {
-        // Update existing course
-        const response = await axios.put(
+        await axios.put(
           `http://localhost:8080/api/allcourses/${editingCourseId}`,
           { ...course, id: editingCourseId }
         );
         alert('Course updated successfully!');
       } else {
-        // Create new course - remove id field
         const { id, ...newCourse } = course;
-        const response = await axios.post(
-          'http://localhost:8080/api/allcourses',
-          newCourse
-        );
+        await axios.post('http://localhost:8080/api/allcourses', newCourse);
         alert('Course created successfully!');
       }
       await fetchCourses();
@@ -153,6 +147,7 @@ function AllCourseAndModules() {
     }
   };
 
+  // DELETE FUNCTION - WORKING VERSION
   const deleteCourse = async (courseId) => {
     if (!courseId || !window.confirm('Are you sure you want to delete this course?')) return;
     
@@ -160,6 +155,7 @@ function AllCourseAndModules() {
     setError(null);
     try {
       await axios.delete(`http://localhost:8080/api/allcourses/${courseId}`);
+      // Update state immediately without waiting for refetch
       setCourses(prev => prev.filter(c => c.id !== courseId));
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to delete course');
@@ -481,8 +477,6 @@ function AllCourseAndModules() {
                     <div>
                       <h3 className="text-lg font-medium text-gray-800">{courseItem.name}</h3>
                       <p className="text-gray-600 text-sm mt-1">{courseItem.description}</p>
-                      
-                      {/* Enhanced Course Details */}
                       <div className="flex flex-wrap gap-4 mt-3 text-sm">
                         <div className="flex items-center text-blue-600">
                           <span>Rs {courseItem.courseFee}</span>
@@ -508,7 +502,7 @@ function AllCourseAndModules() {
                       <button
                         onClick={(e) => { 
                           e.stopPropagation(); 
-                          if (courseItem.id) deleteCourse(courseItem.id); 
+                          deleteCourse(courseItem.id); 
                         }}
                         disabled={isDeleting}
                         className={`p-2 rounded-full transition-colors ${isDeleting ? 'text-gray-400 cursor-not-allowed' : 'text-red-600 hover:text-red-700 hover:bg-red-50'}`}

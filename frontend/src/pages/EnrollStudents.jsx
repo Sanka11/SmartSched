@@ -2,30 +2,57 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { XCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { 
+  XCircleIcon, 
+  XMarkIcon,
+  MagnifyingGlassIcon,
+  UserCircleIcon,
+  AcademicCapIcon,
+  BookOpenIcon,
+  ExclamationTriangleIcon
+} from "@heroicons/react/24/outline";
 import SideNav from "./SideNav";
 
 const StudentEnrollment = () => {
+  const [users, setUsers] = useState([]);
   const [students, setStudents] = useState([]);
-  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [selectedUser, setSelectedUser] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [courses, setCourses] = useState([]);
-  const [groups, setGroups] = useState({}); // State to store groups by course name
+  const [groups, setGroups] = useState({});
   const [deleteConfirmation, setDeleteConfirmation] = useState({
     show: false,
     type: "",
     data: null,
     callback: null,
   });
+  const [isSearchActive, setIsSearchActive] = useState(false);
 
-  // Fetch students from the backend API
+  // Fetch users and students from the backend API
   useEffect(() => {
-    const fetchStudents = async () => {
+    const fetchData = async () => {
       try {
-        const response = await axios.get("http://localhost:8080/api/student-enrollments");
-        setStudents(response.data);
+        const [usersResponse, studentsResponse] = await Promise.all([
+          axios.get("http://localhost:8080/api/users"),
+          axios.get("http://localhost:8080/api/student-enrollments")
+        ]);
+        
+        // Filter users with role 'student' and valid fullName
+        setUsers(usersResponse.data.filter(user => 
+          user?.role === 'student' && user?.fullName
+        ));
+        
+        // Ensure all students have the required structure
+        const studentsWithDefaults = studentsResponse.data.map(student => ({
+          ...student,
+          fullName: student.firstName + ' ' + student.lastName,
+          courseClasses: student.courseClasses || {},
+          courseModules: student.courseModules || {}
+        }));
+        
+        setStudents(studentsWithDefaults);
         setLoading(false);
       } catch (err) {
         setError(err.message);
@@ -33,7 +60,7 @@ const StudentEnrollment = () => {
       }
     };
 
-    fetchStudents();
+    fetchData();
   }, []);
 
   // Fetch courses from the backend
@@ -44,11 +71,56 @@ const StudentEnrollment = () => {
         setCourses(response.data);
       } catch (err) {
         console.error("Error fetching courses:", err);
+        toast.error("Failed to fetch courses");
       }
     };
 
     fetchCourses();
   }, []);
+
+  // Filter students based on search query
+  const filteredUsers = users.filter((user) => {
+    const fullName = user?.fullName || '';
+    const email = user?.email || '';
+    return (
+      fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      email.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  });
+
+  // Handle search input change
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+    setIsSearchActive(e.target.value.length > 0);
+  };
+
+  // Handle user selection
+  const handleUserSelect = async (user) => {
+    if (!user) return;
+    
+    try {
+      // Check if this user is already a student (has enrollments)
+      const existingStudent = students.find(student => student.email === user.email);
+      
+      if (existingStudent) {
+        setSelectedUser(existingStudent);
+        // Fetch groups for all courses of the selected student
+        existingStudent.courses.forEach(courseName => {
+          fetchGroupsForCourse(courseName);
+        });
+      } else {
+        setSelectedUser({
+          ...user,
+          courses: [],
+          courseClasses: {},
+          courseModules: {}
+        });
+      }
+    } catch (err) {
+      console.error("Error selecting user:", err);
+      toast.error("Failed to select user");
+    }
+  };
 
   // Fetch groups for a specific course
   const fetchGroupsForCourse = async (courseName) => {
@@ -62,15 +134,9 @@ const StudentEnrollment = () => {
       }
     } catch (err) {
       console.error("Error fetching groups:", err);
+      toast.error("Failed to fetch groups");
     }
   };
-
-  // Handle student search
-  const filteredStudents = students.filter((student) =>
-    `${student.firstName} ${student.lastName} ${student.email}`
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase())
-  );
 
   // Confirmation dialog
   const showConfirmation = (type, data, callback) => {
@@ -81,14 +147,92 @@ const StudentEnrollment = () => {
     setDeleteConfirmation({ show: false, type: "", data: null, callback: null });
   };
 
+  // Handle course enrollment
+  const handleEnrollCourse = async (courseName) => {
+    if (!courseName || !selectedUser) {
+      toast.warning("Please select a course and student.");
+      return;
+    }
+
+    // Check if the user is already a student
+    let student = students.find(student => student.email === selectedUser.email);
+    
+    if (!student) {
+      // If not, create a new student enrollment record
+      try {
+        const nameParts = selectedUser.fullName.split(' ');
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+
+        const response = await axios.post("http://localhost:8080/api/student-enrollments", {
+          firstName,
+          lastName,
+          email: selectedUser.email,
+          courses: [courseName],
+          courseClasses: { [courseName]: "" },
+          courseModules: { [courseName]: [] }
+        });
+        
+        const newStudent = {
+          ...response.data,
+          fullName: firstName + ' ' + lastName,
+          courseClasses: response.data.courseClasses || { [courseName]: "" },
+          courseModules: response.data.courseModules || { [courseName]: [] }
+        };
+        
+        // Update state
+        setStudents([...students, newStudent]);
+        setSelectedUser(newStudent);
+        await fetchGroupsForCourse(courseName);
+        toast.success(`Enrolled in course "${courseName}" successfully!`);
+      } catch (err) {
+        console.error("Error creating student enrollment:", err);
+        toast.error("Failed to enroll in course");
+      }
+    } else {
+      // Check if the course is already assigned
+      if (student.courses.includes(courseName)) {
+        toast.warning(`Course "${courseName}" is already assigned to the student.`);
+        return;
+      }
+
+      try {
+        const response = await axios.post(
+          `http://localhost:8080/api/student-enrollments/${student.id}/courses?courseName=${courseName}`
+        );
+        const updatedStudent = {
+          ...response.data,
+          fullName: response.data.firstName + ' ' + response.data.lastName,
+          courseClasses: response.data.courseClasses || { ...student.courseClasses, [courseName]: "" },
+          courseModules: response.data.courseModules || { ...student.courseModules, [courseName]: [] }
+        };
+        
+        setSelectedUser(updatedStudent);
+        setStudents(students.map(s => s.id === updatedStudent.id ? updatedStudent : s));
+        await fetchGroupsForCourse(courseName);
+        toast.success(`Enrolled in course "${courseName}" successfully!`);
+      } catch (err) {
+        console.error("Error enrolling in course:", err);
+        toast.error("Failed to enroll in course");
+      }
+    }
+  };
+
   // Handle course removal with confirmation
   const handleRemoveCourse = async (courseName) => {
     try {
       const response = await axios.delete(
-        `http://localhost:8080/api/student-enrollments/${selectedStudent.id}/courses/${courseName}`
+        `http://localhost:8080/api/student-enrollments/${selectedUser.id}/courses/${courseName}`
       );
-      const updatedStudent = response.data;
-      setSelectedStudent(updatedStudent);
+      const updatedStudent = {
+        ...response.data,
+        fullName: response.data.firstName + ' ' + response.data.lastName,
+        courseClasses: response.data.courseClasses || {},
+        courseModules: response.data.courseModules || {}
+      };
+      
+      setSelectedUser(updatedStudent);
+      setStudents(students.map(s => s.id === updatedStudent.id ? updatedStudent : s));
       
       // Remove groups for this course
       setGroups(prev => {
@@ -104,48 +248,29 @@ const StudentEnrollment = () => {
     }
   };
 
-  // Handle course enrollment
-  const handleEnrollCourse = async (courseName) => {
-    if (!courseName) {
-      toast.warning("Please select a course to enroll in.");
-      return;
-    }
-
-    // Check if the course is already assigned
-    if (selectedStudent.courses.includes(courseName)) {
-      toast.warning(`Course "${courseName}" is already assigned to the student.`);
-      return;
-    }
-
-    try {
-      const response = await axios.post(
-        `http://localhost:8080/api/student-enrollments/${selectedStudent.id}/courses?courseName=${courseName}`
-      );
-      const updatedStudent = response.data;
-      setSelectedStudent(updatedStudent);
-      await fetchGroupsForCourse(courseName); // Fetch groups for the new course
-      toast.success(`Enrolled in course "${courseName}" successfully!`);
-    } catch (err) {
-      console.error("Error enrolling in course:", err);
-      toast.error("Failed to enroll in course");
-    }
-  };
-
   // Handle class assignment
   const handleAssignClass = async (courseName, groupId) => {
-    if (!groupId) {
-      toast.warning("Please select a class to assign.");
+    if (!selectedUser || !groupId) {
+      toast.warning("Please select a class and student.");
       return;
     }
 
     try {
       const response = await axios.put(
-        `http://localhost:8080/api/student-enrollments/${selectedStudent.id}/courses/${courseName}/class?className=${groupId}`
+        `http://localhost:8080/api/student-enrollments/${selectedUser.id}/courses/${courseName}/class?className=${groupId}`
       );
 
       if (response.status === 200) {
-        const updatedStudent = response.data;
-        setSelectedStudent(updatedStudent);
+        const updatedStudent = {
+          ...response.data,
+          fullName: response.data.firstName + ' ' + response.data.lastName,
+          courseClasses: response.data.courseClasses || { ...selectedUser.courseClasses, [courseName]: groupId },
+          courseModules: response.data.courseModules || { ...selectedUser.courseModules }
+        };
+        
+        setSelectedUser(updatedStudent);
+        setStudents(students.map(s => s.id === updatedStudent.id ? updatedStudent : s));
+        
         // Find the group name to display in the success message
         const group = (groups[courseName] || []).find(g => g.groupId === groupId);
         toast.success(`Class "${group?.groupName || groupId}" assigned successfully!`);
@@ -172,17 +297,27 @@ const StudentEnrollment = () => {
     }
 
     // Check if the module is already assigned for the selected course
-    if (selectedStudent.courseModules[courseName]?.includes(moduleName)) {
+    if (selectedUser.courseModules[courseName]?.includes(moduleName)) {
       toast.warning(`Module "${moduleName}" is already assigned to the student for course "${courseName}".`);
       return;
     }
 
     try {
       const response = await axios.post(
-        `http://localhost:8080/api/student-enrollments/${selectedStudent.id}/courses/${courseName}/modules?moduleName=${moduleName}`
+        `http://localhost:8080/api/student-enrollments/${selectedUser.id}/courses/${courseName}/modules?moduleName=${moduleName}`
       );
-      const updatedStudent = response.data;
-      setSelectedStudent(updatedStudent);
+      const updatedStudent = {
+        ...response.data,
+        fullName: response.data.firstName + ' ' + response.data.lastName,
+        courseClasses: response.data.courseClasses || { ...selectedUser.courseClasses },
+        courseModules: response.data.courseModules || { 
+          ...selectedUser.courseModules,
+          [courseName]: [...(selectedUser.courseModules[courseName] || []), moduleName]
+        }
+      };
+      
+      setSelectedUser(updatedStudent);
+      setStudents(students.map(s => s.id === updatedStudent.id ? updatedStudent : s));
       toast.success(`Enrolled in module "${moduleName}" successfully!`);
     } catch (err) {
       console.error("Error enrolling in module:", err);
@@ -199,10 +334,17 @@ const StudentEnrollment = () => {
 
     try {
       const response = await axios.delete(
-        `http://localhost:8080/api/student-enrollments/${selectedStudent.id}/courses/${encodeURIComponent(courseName)}/modules/${encodeURIComponent(moduleName)}`
+        `http://localhost:8080/api/student-enrollments/${selectedUser.id}/courses/${encodeURIComponent(courseName)}/modules/${encodeURIComponent(moduleName)}`
       );
-      const updatedStudent = response.data;
-      setSelectedStudent(updatedStudent);
+      const updatedStudent = {
+        ...response.data,
+        fullName: response.data.firstName + ' ' + response.data.lastName,
+        courseClasses: response.data.courseClasses || { ...selectedUser.courseClasses },
+        courseModules: response.data.courseModules || { ...selectedUser.courseModules }
+      };
+      
+      setSelectedUser(updatedStudent);
+      setStudents(students.map(s => s.id === updatedStudent.id ? updatedStudent : s));
       toast.success(`Module "${moduleName}" removed successfully!`);
     } catch (err) {
       console.error("Error removing module:", err);
@@ -212,6 +354,9 @@ const StudentEnrollment = () => {
 
   if (loading) return <div className="p-6 text-gray-700">Loading...</div>;
   if (error) return <div className="p-6 text-red-500">Error: {error}</div>;
+
+  // Determine which users to display
+  const displayedUsers = isSearchActive ? filteredUsers : filteredUsers.slice(0, 3);
 
   return (
     <div className="flex bg-gradient-to-br from-blue-50 to-purple-50 min-h-screen">
@@ -223,37 +368,39 @@ const StudentEnrollment = () => {
         {deleteConfirmation.show && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[1000]">
             <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-xl">
-              <h3 className="text-lg font-semibold mb-4">Confirm Delete</h3>
-              <p className="text-gray-600 mb-6">
-                Are you sure you want to delete this {deleteConfirmation.type}?
-              </p>
-              <div className="flex justify-end space-x-4">
-                <button
-                  onClick={hideConfirmation}
-                  className="px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    if (deleteConfirmation.type === "module") {
-                      const { courseName, moduleName } = deleteConfirmation.data;
-                      deleteConfirmation.callback(courseName, moduleName);
-                    } else {
+              <div className="text-center">
+                <ExclamationTriangleIcon className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
+                <h3 className="text-2xl font-bold text-gray-800 mb-2">
+                  Confirm Deletion
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  {deleteConfirmation.type === "module"
+                    ? `Are you sure you want to delete the "${deleteConfirmation.data.moduleName}" module?`
+                    : `Are you sure you want to delete the course "${deleteConfirmation.data}"?`}
+                </p>
+                <div className="flex justify-center gap-4">
+                  <button
+                    onClick={hideConfirmation}
+                    className="px-6 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
                       deleteConfirmation.callback(deleteConfirmation.data);
-                    }
-                    hideConfirmation();
-                  }}
-                  className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
-                >
-                  Confirm
-                </button>
+                      hideConfirmation();
+                    }}
+                    className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center gap-2"
+                  >
+                    <XCircleIcon className="w-5 h-5" />
+                    Confirm Delete
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Rest of the UI */}
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-8">
@@ -267,210 +414,192 @@ const StudentEnrollment = () => {
 
           {/* Search Bar */}
           <div className="mb-8 relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+            </div>
             <input
               type="text"
               placeholder="Search students..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full p-4 pl-12 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-white shadow-sm"
+              onChange={handleSearchChange}
+              className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/50 backdrop-blur-sm"
             />
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 absolute left-4 top-4 text-gray-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
           </div>
 
-          {/* Student List */}
+          {/* Student Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {filteredStudents.slice(0, selectedStudent ? 0 : 3).map((student) => (
+            {displayedUsers.map((user) => (
               <div
-                key={student.id}
-                onClick={() => {
-                  setSelectedStudent(student);
-                  // Fetch groups for all courses of the selected student
-                  student.courses.forEach(courseName => {
-                    fetchGroupsForCourse(courseName);
-                  });
-                }}
-                className={`p-6 bg-white rounded-xl shadow-sm cursor-pointer transition-all duration-300 ${
-                  selectedStudent?.id === student.id
-                    ? "ring-2 ring-blue-500 transform scale-[1.02]"
-                    : "hover:shadow-md hover:ring-1 hover:ring-gray-100"
+                key={user._id || user.email}
+                onClick={() => handleUserSelect(user)}
+                className={`group p-6 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer border-2 ${
+                  selectedUser?._id === user._id
+                    ? "border-blue-500"
+                    : selectedUser
+                    ? "hidden"
+                    : "border-transparent hover:border-blue-200"
                 }`}
               >
-                <h2 className="text-xl font-semibold text-gray-800 mb-2 flex items-center">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-6 w-6 mr-2 text-blue-500"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                    />
-                  </svg>
-                  {student.firstName} {student.lastName}
-                </h2>
-                <p className="text-gray-600 truncate">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 inline mr-2 text-gray-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                    />
-                  </svg>
-                  {student.email}
-                </p>
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-blue-100 rounded-xl">
+                    <UserCircleIcon className="w-8 h-8 text-blue-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
+                      {user.fullName}
+                    </h2>
+                    <p className="text-gray-500 text-sm">{user.email}</p>
+                    {students.some(student => student.email === user.email) && (
+                      <span className="inline-block mt-1 px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                        Enrolled
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
             ))}
           </div>
 
           {/* Selected Student Details */}
-          {selectedStudent && (
-            <div className="bg-white rounded-xl shadow-sm p-6 mb-8 relative z-10">
-              <button
-                onClick={() => setSelectedStudent(null)}
-                className="absolute top-4 right-4 p-2 text-gray-600 hover:text-gray-900"
-              >
-                <XMarkIcon className="h-6 w-6" />
-              </button>
-              <h2 className="text-3xl font-bold text-gray-800 mb-6 flex items-center">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-8 w-8 mr-3 text-blue-500"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+          {selectedUser && (
+            <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-800">
+                    <AcademicCapIcon className="w-8 h-8 text-purple-600 inline-block mr-3" />
+                    {selectedUser.fullName + "'s Enrollments"}
+                  </h2>
+                  <p className="text-gray-500 mt-1">{selectedUser.email}</p>
+                  {!students.some(student => student.email === selectedUser.email) && (
+                    <p className="text-sm text-yellow-600 mt-1">
+                      This user is not yet enrolled as a student. Enrolling in a course will create a student record.
+                    </p>
+                  )}
+                </div>
+                <button
+                  onClick={() => setSelectedUser(null)}
+                  className="p-2 hover:bg-gray-50 rounded-lg text-gray-400 hover:text-gray-600 transition-colors"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                  />
-                </svg>
-                {selectedStudent.firstName} {selectedStudent.lastName}'s Enrollments
-              </h2>
-
-              {/* Enrolled Courses */}
-              <div className="space-y-6">
-                {selectedStudent.courses.map((courseName) => (
-                  <div key={courseName} className="p-6 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg border border-gray-100">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                      <h3 className="text-xl font-semibold text-gray-800 px-4 py-2 bg-white rounded-md shadow-sm">
-                        {courseName}
-                      </h3>
-                      <button
-                        onClick={() => showConfirmation("course", courseName, handleRemoveCourse)}
-                        className="px-3 py-1.5 text-sm bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors flex items-center gap-2"
-                      >
-                        <XCircleIcon className="w-4 h-4" />
-                        Remove Course
-                      </button>
-                    </div>
-
-                    {/* Class Assignment */}
-                    <div className="mb-6">
-                      <label className="block text-gray-700 mb-2">Assigned Class:</label>
-                      <select
-                        value={selectedStudent.courseClasses[courseName] || ""}
-                        onChange={(e) => handleAssignClass(courseName, e.target.value)}
-                        className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
-                      >
-                        <option value="">Select Class</option>
-                        {(groups[courseName] || []).map((group) => (
-                          <option key={group.groupId} value={group.groupId}>
-                            {group.groupName}
-                          </option>
-                        ))}
-                      </select>
-                      <div className="text-gray-700 mt-2">
-                        Assigned Class:{" "}
-                        {(() => {
-                          const classId = selectedStudent.courseClasses[courseName];
-                          const group = (groups[courseName] || []).find(g => g.groupId === classId);
-                          return group ? group.groupName : classId || "Not assigned";
-                        })()}
-                      </div>
-                    </div>
-
-                    {/* Module Management */}
-                    <div className="mb-6">
-                      <label className="block text-gray-700 mb-2">Enrolled Modules:</label>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {selectedStudent.courseModules[courseName]?.map((moduleName) => (
-                          <div
-                            key={moduleName}
-                            className="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm"
-                          >
-                            <span className="text-gray-700">{moduleName}</span>
-                            <button
-                              onClick={() => showConfirmation("module", { courseName, moduleName }, handleRemoveModule)}
-                              className="px-3 py-1.5 text-sm bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors flex items-center gap-2"
-                            >
-                              <XCircleIcon className="w-4 h-4" />
-                              Remove Module
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Add Module */}
-                    <div className="mt-6">
-                      <select
-                        onChange={(e) => handleEnrollModule(courseName, e.target.value)}
-                        className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
-                      >
-                        <option value="">Enroll in Module</option>
-                        {courses
-                          .find((course) => course.name === courseName)
-                          ?.modules?.map((module) => (
-                            <option key={module.moduleId} value={module.title}>
-                              {module.title}
-                            </option>
-                          ))}
-                      </select>
-                    </div>
-                  </div>
-                ))}
+                  <XMarkIcon className="w-6 h-6" />
+                </button>
               </div>
 
-              {/* Add New Course */}
-              <div className="mt-8 pt-6 border-t border-gray-100">
-                <h3 className="text-xl font-semibold text-gray-800 mb-4">Enroll in New Course</h3>
-                <select
-                  onChange={(e) => handleEnrollCourse(e.target.value)}
-                  className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
-                >
-                  <option value="">Select Course</option>
-                  {courses.map((course) => (
-                    <option key={course.id} value={course.name}>
-                      {course.name}
-                    </option>
+              {/* Enrolled Courses - only show if user is a student */}
+              {students.some(student => student.email === selectedUser.email) && (
+                <div className="space-y-6">
+                  {selectedUser.courses?.map((courseName) => (
+                    <div 
+                      key={`${selectedUser.id}-${courseName}`}
+                      className="p-6 bg-gray-50 rounded-xl border border-gray-200"
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <BookOpenIcon className="w-6 h-6 text-blue-500" />
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-800">{courseName}</h3>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => showConfirmation("course", courseName, handleRemoveCourse)}
+                          className="px-3 py-1.5 text-sm bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors flex items-center gap-2"
+                        >
+                          <XCircleIcon className="w-4 h-4" />
+                          Remove Course
+                        </button>
+                      </div>
+
+                      {/* Class Assignment */}
+                      <div className="ml-9 mb-6">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Assigned Class
+                        </label>
+                        <div className="flex items-center gap-4">
+                          <select
+                            value={selectedUser.courseClasses?.[courseName] || ""}
+                            onChange={(e) => handleAssignClass(courseName, e.target.value)}
+                            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                          >
+                            <option value="">Select Class</option>
+                            {groups[courseName]?.map((group) => (
+                              <option key={`${courseName}-${group.groupId}`} value={group.groupId}>
+                                {group.groupName}
+                              </option>
+                            ))}
+                          </select>
+                          <span className="text-gray-600">
+                            {(() => {
+                              const classId = selectedUser.courseClasses?.[courseName];
+                              const group = groups[courseName]?.find(g => g.groupId === classId);
+                              return group ? group.groupName : classId || "Not assigned";
+                            })()}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Module Management */}
+                      <div className="ml-9">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Enrolled Modules
+                        </label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {selectedUser.courseModules?.[courseName]?.map((moduleName, index) => (
+                            <div
+                              key={`${selectedUser.id}-${courseName}-${moduleName}-${index}`}
+                              className="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm"
+                            >
+                              <span className="text-gray-700">{moduleName}</span>
+                              <button
+                                onClick={() => showConfirmation("module", { courseName, moduleName }, handleRemoveModule)}
+                                className="px-3 py-1 text-sm bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors flex items-center gap-1"
+                              >
+                                <XCircleIcon className="w-4 h-4" />
+                                Remove
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Add Module */}
+                      <div className="ml-9 mt-4">
+                        <select
+                          onChange={(e) => handleEnrollModule(courseName, e.target.value)}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                        >
+                          <option value="">Enroll in Module</option>
+                          {courses
+                            .find((course) => course.name === courseName)
+                            ?.modules?.map((module) => (
+                              <option key={`${courseName}-${module.moduleId}`} value={module.title}>
+                                {module.title}
+                              </option>
+                            ))}
+                        </select>
+                      </div>
+                    </div>
                   ))}
-                </select>
+                </div>
+              )}
+
+              {/* Add New Course */}
+              <div className="mt-8 pt-8 border-t border-gray-200">
+                <h3 className="text-xl font-semibold text-gray-800 mb-6 flex items-center gap-2">
+                  <AcademicCapIcon className="w-6 h-6 text-green-500" />
+                  Enroll in New Course
+                </h3>
+                <div className="flex items-center gap-4">
+                  <select
+                    onChange={(e) => handleEnrollCourse(e.target.value)}
+                    className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white"
+                  >
+                    <option value="">Select Course</option>
+                    {courses.map((course) => (
+                      <option key={course.id || course.name} value={course.name}>
+                        {course.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
           )}
