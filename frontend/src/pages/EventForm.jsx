@@ -20,7 +20,7 @@ const EventForm = () => {
   useEffect(() => {
     if (eventId) {
       axios
-        .get(`http://localhost:8080/events/${eventId}`)
+        .get(`http://localhost:8080/api/events/${eventId}`)
         .then((response) => {
           setEvent(response.data);
         })
@@ -36,17 +36,15 @@ const EventForm = () => {
   // Validate form inputs
   const validate = () => {
     let formErrors = {};
-    const today = new Date("2025-03-22");
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     // Validate date (not in the past)
     if (new Date(event.eventDate) < today) {
       formErrors.eventDate = "Event date cannot be in the past.";
     }
 
-    // Validate time format (HH:MM)
-    if (!/^([01]?\d|2[0-3]):[0-5]\d$/.test(event.eventTime)) {
-      formErrors.eventTime = "Please enter a valid time (HH:MM).";
-    }
+    
 
     setErrors(formErrors);
     return Object.keys(formErrors).length === 0;
@@ -61,13 +59,13 @@ const EventForm = () => {
       if (eventId) {
         // Update existing event
         await axios.put(
-          `http://localhost:8080/events/update/${eventId}`,
+          `http://localhost:8080/api/events/update/${eventId}`,
           event
         );
         alert("Event updated successfully!");
       } else {
         // Create new event
-        await axios.post("http://localhost:8080/events/add", event);
+        await axios.post("http://localhost:8080/api/events/add", event);
         alert("Event created successfully!");
       }
       navigate("/eventlist");
@@ -138,7 +136,9 @@ const EventForm = () => {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                 required
               />
-             
+              {errors.eventTime && (
+                <p className="text-sm text-red-500 mt-1">{errors.eventTime}</p>
+              )}
             </div>
 
             {/* Location */}
