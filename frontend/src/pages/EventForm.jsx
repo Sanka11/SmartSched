@@ -138,9 +138,7 @@ const EventForm = () => {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                 required
               />
-              {errors.eventTime && (
-                <p className="text-sm text-red-500 mt-1">{errors.eventTime}</p>
-              )}
+             
             </div>
 
             {/* Location */}
