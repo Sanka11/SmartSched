@@ -3,9 +3,27 @@ import api from "../services/api";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { motion } from "framer-motion";
-import { FaEdit, FaTrash, FaSave, FaTimes, FaFilePdf } from "react-icons/fa";
+import { 
+  FaEdit, 
+  FaTrash, 
+  FaSave, 
+  FaTimes, 
+  FaFilePdf,
+  FaUsers,
+  FaUserCog,
+  FaUserGraduate,
+  FaChalkboardTeacher,
+  FaTasks,
+  FaUserShield,
+  FaUserAlt,
+  FaBars
+} from "react-icons/fa";
 import { Tab, Tabs, TabList, TabPanel } from "react-tabs";
 import "react-tabs/style/react-tabs.css";
+import Sidebar from "../components/Sidebar";
+import MobileHeader from "../components/MobileHeader";
+import UserTable from "../components/UserTable";
+import FilterControls from "../components/FilterControls";
 
 const UserManagerPage = () => {
   const [users, setUsers] = useState([]);
@@ -15,6 +33,8 @@ const UserManagerPage = () => {
   const [activeTab, setActiveTab] = useState("admin");
   const [filterDate, setFilterDate] = useState("");
   const [filterRole, setFilterRole] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   useEffect(() => {
     fetchAllUsers();
@@ -112,164 +132,97 @@ const UserManagerPage = () => {
     doc.save("user_report.pdf");
   };
 
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
+  const toggleMobileSidebar = () => {
+    setMobileSidebarOpen(!mobileSidebarOpen);
+  };
+
   const renderRoleTable = (role) => {
     const filteredUsers = handleFilter().filter((user) => user.role === role);
 
     return (
       <motion.div
         key={role}
-        className="mb-8"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <table className="min-w-full">
-            <thead className="bg-gray-800 text-white">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Full Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Email</th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Contact</th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Role</th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Permissions</th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredUsers.map((user) => (
-                <motion.tr
-                  key={user.id}
-                  className="hover:bg-gray-50"
-                  whileHover={{ scale: 1.02 }}
-                  transition={{ type: "spring", stiffness: 300 }}
-                >
-                  <td className="px-6 py-4 text-sm text-gray-700">{user.fullName}</td>
-                  <td className="px-6 py-4 text-sm text-gray-700">{user.email}</td>
-                  <td className="px-6 py-4 text-sm text-gray-700">{user.contact}</td>
-                  <td className="px-6 py-4 text-sm text-gray-700">
-                    {editingUserId === user.id ? (
-                      <select
-                        value={editedRole}
-                        onChange={(e) => setEditedRole(e.target.value)}
-                        className="border p-1 rounded-lg w-full"
-                      >
-                        <option value="admin">Admin</option>
-                        <option value="lecturer">Lecturer</option>
-                        <option value="student">Student</option>
-                        <option value="course manager">Course Manager</option>
-                        <option value="assignment manager">Assignment Manager</option>
-                        <option value="user manager">User Manager</option>
-                        <option value="user">User</option>
-                      </select>
-                    ) : (
-                      user.role
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-700">
-                    {editingUserId === user.id ? (
-                      <input
-                        type="text"
-                        value={editedPermissions.join(",")}
-                        onChange={(e) => setEditedPermissions(e.target.value.split(","))}
-                        className="border p-1 rounded-lg w-full"
-                      />
-                    ) : (
-                      (user.permissions || []).join(", ")
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-700">
-                    {editingUserId === user.id ? (
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => handleSave(user.id)}
-                          className="bg-green-500 text-white px-2 py-1 rounded-lg hover:bg-green-600 flex items-center"
-                        >
-                          <FaSave className="mr-1" /> Save
-                        </button>
-                        <button
-                          onClick={handleCancel}
-                          className="bg-gray-500 text-white px-2 py-1 rounded-lg hover:bg-gray-600 flex items-center"
-                        >
-                          <FaTimes className="mr-1" /> Cancel
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => handleEdit(user)}
-                          className="bg-blue-500 text-white px-2 py-1 rounded-lg hover:bg-blue-600 flex items-center"
-                        >
-                          <FaEdit className="mr-1" /> Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(user.id)}
-                          className="bg-red-500 text-white px-2 py-1 rounded-lg hover:bg-red-600 flex items-center"
-                        >
-                          <FaTrash className="mr-1" /> Delete
-                        </button>
-                      </div>
-                    )}
-                  </td>
-                </motion.tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <UserTable
+          users={filteredUsers}
+          editingUserId={editingUserId}
+          editedRole={editedRole}
+          editedPermissions={editedPermissions}
+          handleEdit={handleEdit}
+          handleSave={handleSave}
+          handleDelete={handleDelete}
+          handleCancel={handleCancel}
+          setEditedRole={setEditedRole}
+          setEditedPermissions={setEditedPermissions}
+        />
       </motion.div>
     );
   };
 
   return (
-    <div className="min-h-screen p-8 bg-gray-100">
-      <Tabs selectedIndex={["admin", "lecturer", "student", "course manager", "assignment manager", "user manager", "user"].indexOf(activeTab)} onSelect={(index) => setActiveTab(["admin", "lecturer", "student", "course manager", "assignment manager", "user manager", "user"][index])}>
-        <TabList className="flex space-x-4 mb-8">
-          {["admin", "lecturer", "student", "course manager", "assignment manager", "user manager", "user"].map((role) => (
-            <Tab
-              key={role}
-              className={`px-4 py-2 rounded-lg cursor-pointer ${
-                activeTab === role ? "bg-blue-500 text-white" : "bg-white text-gray-700"
-              }`}
+    <div className="flex h-screen bg-gray-100">
+      <Sidebar
+        sidebarOpen={sidebarOpen}
+        mobileSidebarOpen={mobileSidebarOpen}
+        activeTab={activeTab}
+        toggleSidebar={toggleSidebar}
+        toggleMobileSidebar={toggleMobileSidebar}
+        setActiveTab={setActiveTab}
+        setMobileSidebarOpen={setMobileSidebarOpen}
+      />
+
+      <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${sidebarOpen ? "lg:ml-64" : "lg:ml-20"}`}>
+        <MobileHeader toggleMobileSidebar={toggleMobileSidebar} />
+
+        <main className="flex-1 overflow-y-auto p-4 md:p-8 bg-gradient-to-br from-gray-50 to-gray-100">
+          <div className="max-w-7xl mx-auto">
+            <div className="hidden lg:flex items-center justify-between mb-8">
+              <h1 className="text-3xl font-bold text-gray-800">User Management</h1>
+            </div>
+            
+            <Tabs 
+              selectedIndex={["admin", "lecturer", "student", "course manager", "assignment manager", "user manager", "user"].indexOf(activeTab)} 
+              onSelect={(index) => setActiveTab(["admin", "lecturer", "student", "course manager", "assignment manager", "user manager", "user"][index])}
             >
-              {role.charAt(0).toUpperCase() + role.slice(1)}
-            </Tab>
-          ))}
-        </TabList>
+              <TabList className="hidden lg:flex space-x-2 mb-8 p-1 bg-gray-100 rounded-xl">
+                {["admin", "lecturer", "student", "course manager", "assignment manager", "user manager", "user"].map((role) => (
+                  <Tab
+                    key={role}
+                    className={`px-4 py-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                      activeTab === role 
+                        ? "bg-white text-indigo-600 shadow-md font-medium" 
+                        : "text-gray-600 hover:text-indigo-500 hover:bg-gray-50"
+                    }`}
+                  >
+                    {role.charAt(0).toUpperCase() + role.slice(1)}
+                  </Tab>
+                ))}
+              </TabList>
 
-        <div className="mb-8 flex items-center space-x-4">
-          <input
-            type="date"
-            value={filterDate}
-            onChange={(e) => setFilterDate(e.target.value)}
-            className="border p-2 rounded-lg"
-          />
-          <select
-            value={filterRole}
-            onChange={(e) => setFilterRole(e.target.value)}
-            className="border p-2 rounded-lg"
-          >
-            <option value="">All Roles</option>
-            <option value="admin">Admin</option>
-            <option value="lecturer">Lecturer</option>
-            <option value="student">Student</option>
-            <option value="course manager">Course Manager</option>
-            <option value="assignment manager">Assignment Manager</option>
-            <option value="user manager">User Manager</option>
-            <option value="user">user</option>
-          </select>
-          <button
-            onClick={generatePDF}
-            className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 flex items-center"
-          >
-            <FaFilePdf className="mr-1" /> Generate PDF Report
-          </button>
-        </div>
+              <FilterControls
+                filterDate={filterDate}
+                filterRole={filterRole}
+                setFilterDate={setFilterDate}
+                setFilterRole={setFilterRole}
+                generatePDF={generatePDF}
+              />
 
-        {["admin", "lecturer", "student", "course manager", "assignment manager", "user manager", "user"].map((role) => (
-          <TabPanel key={role}>
-            {renderRoleTable(role)}
-          </TabPanel>
-        ))}
-      </Tabs>
+              {["admin", "lecturer", "student", "course manager", "assignment manager", "user manager", "user"].map((role) => (
+                <TabPanel key={role}>
+                  {renderRoleTable(role)}
+                </TabPanel>
+              ))}
+            </Tabs>
+          </div>
+        </main>
+      </div>
     </div>
   );
 };

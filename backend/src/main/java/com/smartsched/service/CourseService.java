@@ -4,6 +4,7 @@ import com.smartsched.model.Course;
 import com.smartsched.repository.CourseRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -26,6 +27,11 @@ public class CourseService {
     public Optional<Course> getCourseById(String id) {
         return courseRepository.findById(id);
     }
+
+    public Optional<Course> getCourseByCustomCourseId(String customCourseId) {
+    return courseRepository.findByCustomCourseId(customCourseId);
+}
+
 
     // Delete Course by ID
     public void deleteCourse(String id) {

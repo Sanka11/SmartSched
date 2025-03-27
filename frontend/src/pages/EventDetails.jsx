@@ -11,7 +11,7 @@ const EventDetails = () => {
     const fetchEvent = async () => {
       try {
         const response = await axios.get(
-          `http://localhost:8080/events/${eventId}`
+          `http://localhost:8080/api/events/${eventId}`
         );
         setEvent(response.data);
       } catch (error) {
