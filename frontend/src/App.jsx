@@ -19,6 +19,7 @@ import EventList from "./pages/EventList";
 import EventDetails from "./pages/EventDetails";
 import AddUser from "./pages/AddUser";
 import UserProfile from "./pages/UserProfile";
+import CreateEventCourse from "./pages/CreateEventCourse";
 
 
 
@@ -42,6 +43,7 @@ function App() {
       <Route path="/eventlist" element={<EventList />} />
       <Route path="/view-event/:eventId" element={<EventDetails />} />
       <Route path="/update-event/:eventId" element={<EventForm />} />{" "}
+      <Route path="/eventcourse" element={<CreateEventCourse />} />
       
 
       
