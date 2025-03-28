@@ -15,7 +15,11 @@ import GenerateReportAssignManager from "./pages/GenerateReportAssignManager";
 
 //AI Imports
 import AIscheduler from "./pages/AIscheduler";
-
+import UserTimetable from "./pages/UserTimetable";
+import StudentTimetable from "./pages/StudentTimetable";
+import StudentDashboard from "./pages/StudentDashboard";
+import LecturerTimetable from "./pages/LecturerTimetable";
+import LecturerDashboard from "./pages/LecturerDashboard";
 
 
 
@@ -35,6 +39,12 @@ function App() {
       <Route path="/user-manager" element={<UserManagerPage />} />
       <Route path="/generate-reports-assign" element={<GenerateReportAssignManager />} />
       <Route path="/ai-scheduler" element={<AIscheduler />} /> {/*AI Sceduler*/}
+      <Route path="/my-timetable" element={<UserTimetable />} />
+      <Route path="/student/timetable" element={<StudentTimetable />} />
+      <Route path="/student/dashboard" element={<StudentDashboard />} />
+      <Route path="/lecturer/timetable" element={<LecturerTimetable />} />
+      <Route path="/lecturer/dashboard" element={<LecturerDashboard />} />
+
     </Routes>
   );
 }

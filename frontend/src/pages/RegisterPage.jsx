@@ -25,19 +25,17 @@ const RegisterPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Hash the password before sending it to the server
-      const hashedPassword = bcrypt.hashSync(user.password, 10);
-      const userData = { ...user, password: hashedPassword };
-
-      const response = await api.post("/api/users/register", userData);
+      // ✅ Send raw password, don't hash here
+      const response = await api.post("/api/users/register", user);
       console.log("User registered:", response.data);
       alert("Registration successful!");
-      navigate("/login"); // Redirect to login page after successful registration
+      navigate("/login");
     } catch (error) {
       console.error("Error registering user:", error);
       alert("Failed to register. Try again.");
     }
   };
+  
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-r ">
