@@ -356,7 +356,7 @@ const StudentEnrollment = () => {
   if (error) return <div className="p-6 text-red-500">Error: {error}</div>;
 
   // Determine which users to display
-  const displayedUsers = isSearchActive ? filteredUsers : filteredUsers.slice(0, 3);
+  const displayedUsers = isSearchActive ? filteredUsers : filteredUsers.slice(0, 6);
 
   return (
     <div className="flex bg-gradient-to-br from-blue-50 to-purple-50 min-h-screen">
