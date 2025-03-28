@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useParams } from "react-router-dom"; // Hook to get the event ID from URL
+import { useParams } from "react-router-dom";
+import { FaCalendarAlt, FaClock, FaMapMarkerAlt, FaUsers, FaInfoCircle } from "react-icons/fa";
 
 const EventDetails = () => {
   const [event, setEvent] = useState(null);
-  const { eventId } = useParams(); // Get eventId from URL params
+  const { eventId } = useParams();
 
-  // Fetch event details
   useEffect(() => {
     const fetchEvent = async () => {
       try {
@@ -23,93 +23,106 @@ const EventDetails = () => {
 
   if (!event) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="text-xl font-semibold">Loading...</div>
+      <div className="flex justify-center items-center h-screen bg-gray-900 text-white">
+        Loading...
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-      <div className="w-full max-w-4xl bg-white shadow-xl rounded-lg overflow-hidden">
-        {/* Header Section */}
-        <div className="p-8 border-b border-gray-200">
-          <h2 className="text-3xl font-bold text-gray-900">Event Details</h2>
-          <p className="text-gray-600 mt-2">
-            Detailed information about the event.
+    <div className="min-h-screen bg-gray-900 text-gray-200 overflow-hidden">
+      {/* Header Section */}
+      <header className="py-12 text-center bg-gray-800 border-b border-gray-700">
+        <div className="max-w-4xl mx-auto px-4">
+          <h1 className="text-4xl font-bold mb-4 text-white">Event Details</h1>
+          <p className="text-lg text-gray-400 max-w-2xl mx-auto">
+            Detailed information about the event
           </p>
         </div>
+      </header>
 
-        {/* Event Details Section (Form-Like Layout) */}
-        <div className="p-8">
-          <div className="space-y-6">
-            {/* Event Name */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Event Name
-              </label>
-              <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-900">
-                {event.eventName}
+      {/* Main Content */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Event Details Card */}
+        <div className="bg-gray-800 rounded-xl shadow-lg border border-gray-700 overflow-hidden">
+          <div className="p-8">
+            <h2 className="text-3xl font-bold text-center text-blue-400 mb-6">
+              {event.eventName}
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Left Column */}
+              <div className="space-y-4">
+                {/* Event Date */}
+                <div className="border-b border-gray-700 pb-4">
+                  <div className="flex items-center text-lg">
+                    <FaCalendarAlt className="text-blue-400 mr-3" />
+                    <div>
+                      <span className="font-semibold text-gray-300">Date:</span>{" "}
+                      <span className="text-gray-200">{event.eventDate}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Event Time */}
+                <div className="border-b border-gray-700 pb-4">
+                  <div className="flex items-center text-lg">
+                    <FaClock className="text-blue-400 mr-3" />
+                    <div>
+                      <span className="font-semibold text-gray-300">Time:</span>{" "}
+                      <span className="text-gray-200">{event.eventTime}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Event Mode */}
+                <div className="border-b border-gray-700 pb-4">
+                  <div className="flex items-center text-lg">
+                    <div className="w-5 mr-3"></div> {/* Spacer for alignment */}
+                    <div>
+                      <span className="font-semibold text-gray-300">Mode:</span>{" "}
+                      <span className="text-gray-200">{event.eventMode}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            {/* Event Date */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Event Date
-              </label>
-              <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-900">
-                {event.eventDate}
-              </div>
-            </div>
+              {/* Right Column */}
+              <div className="space-y-4">
+                {/* Location */}
+                <div className="border-b border-gray-700 pb-4">
+                  <div className="flex items-center text-lg">
+                    <FaMapMarkerAlt className="text-blue-400 mr-3" />
+                    <div>
+                      <span className="font-semibold text-gray-300">Location:</span>{" "}
+                      <span className="text-gray-200">{event.location}</span>
+                    </div>
+                  </div>
+                </div>
 
-            {/* Event Time */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Event Time
-              </label>
-              <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-900">
-                {event.eventTime}
-              </div>
-            </div>
-
-            {/* Event Mode */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Event Mode
-              </label>
-              <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-900">
-                {event.eventMode}
-              </div>
-            </div>
-
-            {/* Location */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Location
-              </label>
-              <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-900">
-                {event.location}
-              </div>
-            </div>
-
-            {/* Organizing Committee */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Organizing Committee
-              </label>
-              <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-900">
-                {event.orgCommittee}
+                {/* Organizing Committee */}
+                <div className="border-b border-gray-700 pb-4">
+                  <div className="flex items-center text-lg">
+                    <FaUsers className="text-blue-400 mr-3" />
+                    <div>
+                      <span className="font-semibold text-gray-300">Organizing Committee:</span>{" "}
+                      <span className="text-gray-200">{event.orgCommittee}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* Description */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description
-              </label>
-              <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-900">
-                {event.description}
+            <div className="mt-6 pt-6 border-t border-gray-700">
+              <div className="flex items-start">
+                <FaInfoCircle className="text-blue-400 mr-3 mt-1 flex-shrink-0" />
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-300 mb-2">
+                    Description
+                  </h3>
+                  <p className="text-gray-300 whitespace-pre-line">{event.description}</p>
+                </div>
               </div>
             </div>
           </div>
