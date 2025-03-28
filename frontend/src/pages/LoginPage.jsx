@@ -42,7 +42,7 @@ const LoginPage = () => {
         navigate("/student");
       }
       else if (userRole === "assignment manager") {
-        navigate("/assignment manager");
+        navigate("/assignmentdashboard");
       }else if (userRole === "course manager") {
         navigate("/eventcourse");
       }
