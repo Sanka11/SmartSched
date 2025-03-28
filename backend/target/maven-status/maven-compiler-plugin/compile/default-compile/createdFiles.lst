@@ -1,4 +1,4 @@
 com/smartsched/controller/HomeController.class
+com/smartsched/controller/InstructorAssignmentController.class
 com/smartsched/config/SecurityConfig.class
 com/smartsched/SmartschedApplication.class
-com/smartsched/controller/InstructorAssignmentController.class
