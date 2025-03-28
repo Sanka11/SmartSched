@@ -7,6 +7,7 @@ import loginImage from "../assets/signuppageimage.jpg";
 
 // Import icons
 import { FaEnvelope, FaLock } from "react-icons/fa";
+import { AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
 
 const LoginPage = () => {
   const [credentials, setCredentials] = useState({
@@ -14,11 +15,16 @@ const LoginPage = () => {
     password: "",
   });
   const [errorMessage, setErrorMessage] = useState(""); // Store error messages
+  const [showPassword, setShowPassword] = useState(false);
 
   const navigate = useNavigate();
 
   const handleChange = (e) => {
     setCredentials({ ...credentials, [e.target.name]: e.target.value });
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
   };
 
   const handleSubmit = async (e) => {
@@ -42,11 +48,12 @@ const LoginPage = () => {
         navigate("/student");
       }
       else if (userRole === "assignment manager") {
-        navigate("/assignment manager");
+        navigate("/assignmentdashboard");
       }else if (userRole === "course manager") {
-        navigate("/eventcourse");
-      }
-      else {
+        navigate("/course manager");
+      }else if (userRole === "lecturer") {
+        navigate("/lecturer");
+      }else {
         navigate("/dashboard");
       }
     } catch (error) {
@@ -82,14 +89,21 @@ const LoginPage = () => {
             <div className="relative">
               <FaLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 name="password"
                 placeholder="Password"
-                className="border p-3 pl-10 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                className="border p-3 pl-10 pr-10 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                 value={credentials.password}
                 onChange={handleChange}
                 required
               />
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 focus:outline-none"
+                onClick={togglePasswordVisibility}
+              >
+                {showPassword ? <AiFillEyeInvisible /> : <AiFillEye />}
+              </button>
             </div>
             <button
               type="submit"
