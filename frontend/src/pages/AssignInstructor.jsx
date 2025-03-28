@@ -75,7 +75,7 @@ const AssignInstructor = () => {
   };
 
   // Determine which users to display
-  const displayedUsers = isSearchActive ? filteredUsers : filteredUsers.slice(0, 3);
+  const displayedUsers = isSearchActive ? filteredUsers : filteredUsers.slice(0, 6);
 
   // Handle user selection
   const handleUserSelect = (user) => {
