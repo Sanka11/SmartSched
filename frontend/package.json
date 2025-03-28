@@ -18,7 +18,11 @@
     "axios": "^1.8.4",
     "bcryptjs": "^3.0.2",
     "crypto-js": "^4.2.0",
+<<<<<<< HEAD
     "framer-motion": "^12.7.4",
+=======
+    "framer-motion": "^12.6.2",
+>>>>>>> 7fbd29d (Update: frontend dependencies)
     "jspdf": "^2.5.2",
     "jspdf-autotable": "^3.8.4",
     "react": "^19.0.0",
