@@ -19,7 +19,12 @@ import EventList from "./pages/EventList";
 import EventDetails from "./pages/EventDetails";
 import AddUser from "./pages/AddUser";
 import UserProfile from "./pages/UserProfile";
+<<<<<<< HEAD
+import CreateEventCourse from "./pages/CreateEventCourse";
+
+=======
 import AllCourseAndModules from "./pages/AllCourseAndModules";
+>>>>>>> 2126384ae3664234bcce72ba32ed5453cd9e7130
 
 
 function App() {
@@ -42,6 +47,7 @@ function App() {
       <Route path="/eventlist" element={<EventList />} />
       <Route path="/view-event/:eventId" element={<EventDetails />} />
       <Route path="/update-event/:eventId" element={<EventForm />} />{" "}
+      <Route path="/eventcourse" element={<CreateEventCourse />} />
       
 
       <Route path="/generate-reports-assign" element={<GenerateReportAssignManager/>} />
