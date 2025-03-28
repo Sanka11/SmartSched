@@ -19,7 +19,11 @@
     "bcryptjs": "^3.0.2",
     "crypto-js": "^4.2.0",
 <<<<<<< HEAD
+<<<<<<< HEAD
     "framer-motion": "^12.7.4",
+=======
+    "framer-motion": "^12.6.2",
+>>>>>>> 7fbd29d (Update: frontend dependencies)
 =======
     "framer-motion": "^12.6.2",
 >>>>>>> 7fbd29d (Update: frontend dependencies)
