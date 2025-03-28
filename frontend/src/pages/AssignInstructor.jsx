@@ -13,9 +13,10 @@ import SideNav from "./SideNav";
 
 const AssignInstructor = () => {
   // State variables
+  const [users, setUsers] = useState([]);
   const [instructors, setInstructors] = useState([]);
   const [courses, setCourses] = useState([]);
-  const [selectedInstructor, setSelectedInstructor] = useState(null);
+  const [selectedUser, setSelectedUser] = useState(null);
   const [selectedCourse, setSelectedCourse] = useState("");
   const [selectedModule, setSelectedModule] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -27,9 +28,18 @@ const AssignInstructor = () => {
   const [classToDelete, setClassToDelete] = useState("");
   const [deleteAction, setDeleteAction] = useState(""); // 'module' or 'class'
 
-  // Fetch instructors and courses on component mount
+  // Fetch users and instructors on component mount
   useEffect(() => {
-    // Fetch instructors
+    // Fetch users (potential instructors)
+    fetch("http://localhost:8080/api/users")
+      .then((res) => res.json())
+      .then((data) => setUsers(data))
+      .catch((err) => {
+        console.error("Error fetching users:", err);
+        toast.error("Failed to fetch users");
+      });
+
+    // Fetch existing instructors
     fetch("http://localhost:8080/api/instructors")
       .then((res) => res.json())
       .then((data) => setInstructors(data))
@@ -42,7 +52,7 @@ const AssignInstructor = () => {
     fetch("http://localhost:8080/api/allcourses")
       .then((res) => res.json())
       .then((data) => {
-        console.log("Courses Data:", data); // Debugging
+        console.log("Courses Data:", data);
         setCourses(data);
       })
       .catch((err) => {
@@ -51,20 +61,11 @@ const AssignInstructor = () => {
       });
   }, []);
 
-  // Log selected course and its modules for debugging
-  useEffect(() => {
-    if (selectedCourse) {
-      const selectedCourseData = courses.find((c) => c.id === selectedCourse);
-      console.log("Selected Course Data:", selectedCourseData);
-      console.log("Modules for Selected Course:", selectedCourseData?.modules);
-    }
-  }, [selectedCourse, courses]);
-
-  // Filter instructors based on search query
-  const filteredInstructors = instructors.filter((instructor) =>
-    `${instructor.firstName} ${instructor.lastName}`
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase())
+  // Filter users based on search query and role
+  const filteredUsers = users.filter(
+    (user) =>
+      user.role === "lecturer" &&
+      user.fullName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Handle search input change
@@ -73,91 +74,141 @@ const AssignInstructor = () => {
     setIsSearchActive(e.target.value.length > 0);
   };
 
+  // Determine which users to display
+  const displayedUsers = isSearchActive ? filteredUsers : filteredUsers.slice(0, 3);
+
+  // Handle user selection
+  const handleUserSelect = (user) => {
+    // Check if this user is already an instructor
+    const existingInstructor = instructors.find(instructor => instructor.email === user.email);
+    
+    if (existingInstructor) {
+      // If they are an instructor, set them as selected
+      setSelectedUser({
+        ...existingInstructor,
+        fullName: existingInstructor.firstName + ' ' + existingInstructor.lastName
+      });
+    } else {
+      // If not, just set the basic user info
+      setSelectedUser(user);
+    }
+  };
+
   // Handle module assignment
-  const handleAssignModule = (moduleTitle) => {
-    if (!selectedCourse || !moduleTitle || !selectedInstructor) {
+  const handleAssignModule = async (moduleTitle) => {
+    if (!selectedCourse || !moduleTitle || !selectedUser) {
       toast.warning("Please select a course, module, and instructor.");
       return;
     }
 
-    // Check if the module is already assigned
-    if (
-      selectedInstructor.modules &&
-      selectedInstructor.modules.includes(moduleTitle)
-    ) {
-      toast.warning(
-        `Module "${moduleTitle}" is already assigned to ${selectedInstructor.firstName} ${selectedInstructor.lastName}.`
-      );
-      return;
-    }
+    // Check if the user is already an instructor
+    let instructor = instructors.find(instructor => instructor.email === selectedUser.email);
+    
+    if (!instructor) {
+      // If not, create a new instructor record
+      try {
+        const nameParts = selectedUser.fullName.split(' ');
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
 
-    // Assign module to instructor
-    fetch(
-      `http://localhost:8080/api/instructors/${selectedInstructor.email}/assignModule/${moduleTitle}`,
-      {
-        method: "PUT",
+        const response = await fetch("http://localhost:8080/api/instructors", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            firstName: firstName,
+            lastName: lastName,
+            email: selectedUser.email,
+            modules: [moduleTitle]
+          })
+        });
+        
+        if (!response.ok) throw new Error("Failed to create instructor");
+        
+        const newInstructor = await response.json();
+        const newInstructorWithFullName = {
+          ...newInstructor,
+          fullName: firstName + ' ' + lastName
+        };
+        
+        // Update state
+        setInstructors([...instructors, newInstructor]);
+        setSelectedUser(newInstructorWithFullName);
+        instructor = newInstructor;
+        
+      } catch (err) {
+        console.error("Error creating instructor:", err);
+        toast.error("Failed to create instructor");
+        return;
       }
-    )
-      .then((res) => res.json())
-      .then((updatedInstructor) => {
-        setInstructors((prevInstructors) =>
-          prevInstructors.map((instructor) =>
-            instructor.id === updatedInstructor.id ? updatedInstructor : instructor
-          )
+    } else {
+      // Check if the module is already assigned
+      if (instructor.modules && instructor.modules.includes(moduleTitle)) {
+        toast.warning(
+          `Module "${moduleTitle}" is already assigned to ${instructor.firstName} ${instructor.lastName}.`
         );
-        if (selectedInstructor.id === updatedInstructor.id) {
-          setSelectedInstructor(updatedInstructor);
+        return;
+      }
+
+      // Assign module to existing instructor
+      fetch(
+        `http://localhost:8080/api/instructors/${instructor.email}/assignModule/${moduleTitle}`,
+        {
+          method: "PUT",
         }
-        setSelectedCourse("");
-        setSelectedModule("");
-        toast.success(`Module "${moduleTitle}" assigned successfully!`);
-      })
-      .catch((err) => {
-        console.error("Error assigning module:", err);
-        toast.error("Failed to assign module");
-      });
+      )
+        .then((res) => res.json())
+        .then((updatedInstructor) => {
+          const updatedInstructorWithFullName = {
+            ...updatedInstructor,
+            fullName: updatedInstructor.firstName + ' ' + updatedInstructor.lastName
+          };
+          
+          setInstructors((prevInstructors) =>
+            prevInstructors.map((inst) =>
+              inst.id === updatedInstructor.id ? updatedInstructor : inst
+            )
+          );
+          setSelectedUser(updatedInstructorWithFullName);
+          setSelectedCourse("");
+          setSelectedModule("");
+          toast.success(`Module "${moduleTitle}" assigned successfully!`);
+        })
+        .catch((err) => {
+          console.error("Error assigning module:", err);
+          toast.error("Failed to assign module");
+        });
+        return;
+    }
   };
 
   // Handle class assignment
   const handleAssignClass = (moduleName, groupId) => {
-    if (!selectedInstructor || !groupId) {
+    if (!selectedUser || !groupId || !selectedUser.email) {
       toast.warning("Please select a class and instructor.");
       return;
     }
-  
-    // Find the group name for the selected groupId
+
+    // Find the course that contains this module
     const selectedCourse = courses.find((c) =>
       c.modules?.some((m) => m.title === moduleName)
     );
+
+    // Find the specific group in this course
     const selectedGroup = selectedCourse?.groups?.find(
       (group) => group.groupId === groupId
     );
     const groupName = selectedGroup?.groupName;
-  
+
     if (!groupName) {
       toast.warning("Invalid group selected.");
       return;
     }
-  
-    // Check if the group is already assigned to any instructor for this module
-    const isGroupAlreadyAssigned = instructors.some(instructor => {
-      return instructor.classes?.[moduleName] === groupId;
-    });
-  
-    if (isGroupAlreadyAssigned) {
-      toast.warning(`Group "${groupName}" is already assigned to another instructor for this module.`);
-      return;
-    }
-  
-    // Check if the group is already assigned to this instructor's module
-    if (selectedInstructor.classes?.[moduleName] === groupId) {
-      toast.warning(`Group "${groupName}" is already assigned to this module.`);
-      return;
-    }
-  
+
     // Send the groupId to the backend
     fetch(
-      `http://localhost:8080/api/instructors/${selectedInstructor.email}/assignClass/${moduleName}/${groupId}`,
+      `http://localhost:8080/api/instructors/${selectedUser.email}/assignClass/${moduleName}/${groupId}`,
       {
         method: "PUT",
         headers: {
@@ -167,25 +218,25 @@ const AssignInstructor = () => {
       }
     )
       .then(() => {
-        // Update the selectedInstructor state immediately
-        const updatedInstructor = {
-          ...selectedInstructor,
+        // Update the selectedUser state immediately
+        const updatedUser = {
+          ...selectedUser,
           classes: {
-            ...selectedInstructor.classes,
-            [moduleName]: groupId, // Store groupId in the state
+            ...selectedUser.classes,
+            [moduleName]: groupId,
           },
         };
-        setSelectedInstructor(updatedInstructor);
-  
+        setSelectedUser(updatedUser);
+
         // Update the instructors list
         setInstructors((prevInstructors) =>
           prevInstructors.map((instructor) =>
-            instructor.email === selectedInstructor.email
-              ? updatedInstructor
+            instructor.email === selectedUser.email
+              ? updatedUser
               : instructor
           )
         );
-  
+
         toast.success(`Class "${groupName}" assigned successfully!`);
       })
       .catch((err) => {
@@ -215,29 +266,29 @@ const AssignInstructor = () => {
     setShowDeleteModal(false);
     if (deleteAction === "module") {
       fetch(
-        `http://localhost:8080/api/instructors/${selectedInstructor.email}/deleteModule/${moduleToDelete}`,
+        `http://localhost:8080/api/instructors/${selectedUser.email}/deleteModule/${moduleToDelete}`,
         {
           method: "DELETE",
         }
       )
         .then(() => {
-          // Update the selectedInstructor state immediately
-          const updatedInstructor = {
-            ...selectedInstructor,
-            modules: selectedInstructor.modules.filter((m) => m !== moduleToDelete),
+          // Update the selectedUser state immediately
+          const updatedUser = {
+            ...selectedUser,
+            modules: selectedUser.modules.filter((m) => m !== moduleToDelete),
             classes: Object.fromEntries(
-              Object.entries(selectedInstructor.classes || {}).filter(
+              Object.entries(selectedUser.classes || {}).filter(
                 ([mod]) => mod !== moduleToDelete
               )
             ),
           };
-          setSelectedInstructor(updatedInstructor);
+          setSelectedUser(updatedUser);
 
           // Update the instructors list
           setInstructors((prevInstructors) =>
             prevInstructors.map((instructor) =>
-              instructor.email === selectedInstructor.email
-                ? updatedInstructor
+              instructor.email === selectedUser.email
+                ? updatedUser
                 : instructor
             )
           );
@@ -252,28 +303,28 @@ const AssignInstructor = () => {
         });
     } else if (deleteAction === "class") {
       fetch(
-        `http://localhost:8080/api/instructors/${selectedInstructor.email}/deleteClass/${moduleToDelete}/${classToDelete}`,
+        `http://localhost:8080/api/instructors/${selectedUser.email}/deleteClass/${moduleToDelete}/${classToDelete}`,
         {
           method: "DELETE",
         }
       )
         .then(() => {
-          // Update the selectedInstructor state immediately
-          const updatedInstructor = {
-            ...selectedInstructor,
+          // Update the selectedUser state immediately
+          const updatedUser = {
+            ...selectedUser,
             classes: Object.fromEntries(
-              Object.entries(selectedInstructor.classes || {}).filter(
+              Object.entries(selectedUser.classes || {}).filter(
                 ([mod, cls]) => !(mod === moduleToDelete && cls === classToDelete)
               )
             ),
           };
-          setSelectedInstructor(updatedInstructor);
+          setSelectedUser(updatedUser);
 
           // Update the instructors list
           setInstructors((prevInstructors) =>
             prevInstructors.map((instructor) =>
-              instructor.email === selectedInstructor.email
-                ? updatedInstructor
+              instructor.email === selectedUser.email
+                ? updatedUser
                 : instructor
             )
           );
@@ -297,7 +348,7 @@ const AssignInstructor = () => {
 
   // Get group name for a module
   const getGroupNameForModule = (moduleName) => {
-    const groupId = selectedInstructor.classes?.[moduleName];
+    const groupId = selectedUser.classes?.[moduleName];
     if (!groupId) return "No class assigned";
 
     const selectedCourse = courses.find((c) =>
@@ -308,9 +359,6 @@ const AssignInstructor = () => {
     );
     return selectedGroup?.groupName || "Unknown Group";
   };
-
-  // Determine which instructors to display
-  const displayedInstructors = isSearchActive ? filteredInstructors : filteredInstructors.slice(0, 3);
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
@@ -373,23 +421,23 @@ const AssignInstructor = () => {
             </div>
             <input
               type="text"
-              placeholder="Search instructors..."
+              placeholder="Search users..."
               value={searchQuery}
               onChange={handleSearchChange}
               className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/50 backdrop-blur-sm"
             />
           </div>
 
-          {/* Instructor Cards */}
+          {/* User Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {displayedInstructors.map((instructor) => (
+            {displayedUsers.map((user) => (
               <div
-                key={instructor.id}
-                onClick={() => setSelectedInstructor(instructor)}
+                key={user._id}
+                onClick={() => handleUserSelect(user)}
                 className={`group p-6 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer border-2 ${
-                  selectedInstructor?.id === instructor.id
+                  selectedUser?._id === user._id
                     ? "border-blue-500"
-                    : selectedInstructor
+                    : selectedUser
                     ? "hidden"
                     : "border-transparent hover:border-blue-200"
                 }`}
@@ -400,85 +448,103 @@ const AssignInstructor = () => {
                   </div>
                   <div>
                     <h2 className="text-xl font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
-                      {instructor.firstName} {instructor.lastName}
+                      {user.fullName}
                     </h2>
-                    <p className="text-gray-500 text-sm">{instructor.email}</p>
+                    <p className="text-gray-500 text-sm">{user.email}</p>
+                    {instructors.some(instructor => instructor.email === user.email) && (
+                      <span className="inline-block mt-1 px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                        Instructor
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Selected Instructor Section */}
-          {selectedInstructor && (
+          {/* Selected User/Instructor Section */}
+          {selectedUser && (
             <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-800">
                     <AcademicCapIcon className="w-8 h-8 text-purple-600 inline-block mr-3" />
-                    {selectedInstructor.firstName} {selectedInstructor.lastName}'s Assignments
+                    {selectedUser.fullName || selectedUser.firstName + ' ' + selectedUser.lastName}'s Assignments
                   </h2>
-                  <p className="text-gray-500 mt-1">{selectedInstructor.email}</p>
+                  <p className="text-gray-500 mt-1">{selectedUser.email}</p>
+                  {!instructors.some(instructor => instructor.email === selectedUser.email) && (
+                    <p className="text-sm text-yellow-600 mt-1">
+                      This user is not yet an instructor. Assigning a module will create an instructor record.
+                    </p>
+                  )}
                 </div>
                 <button
-                  onClick={() => setSelectedInstructor(null)}
+                  onClick={() => setSelectedUser(null)}
                   className="p-2 hover:bg-gray-50 rounded-lg text-gray-400 hover:text-gray-600 transition-colors"
                 >
                   <XCircleIcon className="w-6 h-6" />
                 </button>
               </div>
 
-              {/* Assigned Modules */}
-              <div className="space-y-6">
-                {selectedInstructor.modules?.map((module) => (
-                  <div key={module} className="p-6 bg-gray-50 rounded-xl border border-gray-200">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <BookOpenIcon className="w-6 h-6 text-blue-500" />
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-800">{module}</h3>
-                          <p className="text-sm text-gray-500">
-                            {getCourseNameForModule(module)}
-                          </p>
+              {/* Assigned Modules - only show if user is an instructor */}
+              {instructors.some(instructor => instructor.email === selectedUser.email) && (
+                <div className="space-y-6">
+                  {selectedUser.modules?.map((module) => (
+                    <div key={module} className="p-6 bg-gray-50 rounded-xl border border-gray-200">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <BookOpenIcon className="w-6 h-6 text-blue-500" />
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-800">{module}</h3>
+                            <p className="text-sm text-gray-500">
+                              {getCourseNameForModule(module)}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleDeleteModule(module)}
+                          className="px-3 py-1.5 text-sm bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors flex items-center gap-2"
+                        >
+                          <XCircleIcon className="w-4 h-4" />
+                          Remove Module
+                        </button>
+                      </div>
+
+                      {/* Class Assignment */}
+                      <div className="ml-9">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Assigned Class
+                        </label>
+                        <div className="flex items-center gap-4">
+                          <select
+                            value={selectedUser.classes?.[module] || ""}
+                            onChange={(e) => handleAssignClass(module, e.target.value)}
+                            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                          >
+                            <option value="">Select Class</option>
+                            {(() => {
+                              // Find the course that contains this module
+                              const courseForModule = courses.find(c => 
+                                c.modules?.some(m => m.title === module)
+                              );
+                              
+                              // Return groups only from this course
+                              return courseForModule?.groups?.map((group) => (
+                                <option key={group.groupId} value={group.groupId}>
+                                  {group.groupName}
+                                </option>
+                              ));
+                            })()}
+                          </select>
+                          <span className="text-gray-600">
+                            {getGroupNameForModule(module)}
+                          </span>
                         </div>
                       </div>
-                      <button
-                        onClick={() => handleDeleteModule(module)}
-                        className="px-3 py-1.5 text-sm bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors flex items-center gap-2"
-                      >
-                        <XCircleIcon className="w-4 h-4" />
-                        Remove Module
-                      </button>
                     </div>
-
-                    {/* Class Assignment */}
-                    <div className="ml-9">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Assigned Class
-                      </label>
-                      <div className="flex items-center gap-4">
-                        <select
-                          value={selectedInstructor.classes?.[module] || ""}
-                          onChange={(e) => handleAssignClass(module, e.target.value)}
-                          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                        >
-                          <option value="">Select Class</option>
-                          {courses
-                            .find((c) => c.modules?.some((m) => m.title === module))
-                            ?.groups?.map((group) => (
-                              <option key={group.groupId} value={group.groupId}>
-                                {group.groupName}
-                              </option>
-                            ))}
-                        </select>
-                        <span className="text-gray-600">
-                          {getGroupNameForModule(module)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
 
               {/* Add Module Section */}
               <div className="mt-8 pt-8 border-t border-gray-200">

@@ -1,12 +1,12 @@
 package com.smartsched.service;
 
-
 import com.smartsched.model.AllCourse;
-import com.smartsched.model.AllModule;
-import com.smartsched.model.AllGroups;
 import com.smartsched.repository.AllCourseRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import com.smartsched.model.AllModule;
+import com.smartsched.model.AllGroups;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -29,37 +29,43 @@ public class AllCourseService {
     }
 
     public AllCourse updateCourse(String id, AllCourse courseDetails) {
-        return courseRepository.findById(id).map(course -> {
-            course.setName(courseDetails.getName());
-            course.setDescription(courseDetails.getDescription());
-            course.setModules(courseDetails.getModules());
-            return courseRepository.save(course);
-        }).orElseThrow(() -> new RuntimeException("Course not found"));
+        AllCourse course = courseRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Course not found with id: " + id));
+        
+        course.setName(courseDetails.getName());
+        course.setDescription(courseDetails.getDescription());
+        course.setCourseFee(courseDetails.getCourseFee());
+        course.setCourseDuration(courseDetails.getCourseDuration());
+        course.setContactEmail(courseDetails.getContactEmail());
+        course.setModules(courseDetails.getModules());
+        course.setGroups(courseDetails.getGroups());
+        
+        return courseRepository.save(course);
     }
 
-    public void deleteCourse(String id) {
-        courseRepository.deleteById(id);
+    public boolean deleteCourse(String id) {
+        if (courseRepository.existsById(id)) {
+            courseRepository.deleteById(id);
+            return true;
+        }
+        return false;
     }
 
-    // New service method to fetch modules of a course
     public List<AllModule> getModulesByCourseId(String id) {
-        return courseRepository.findById(id)
-                .map(AllCourse::getModules)
-                .orElseThrow(() -> new RuntimeException("Course not found"));
+        AllCourse course = courseRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Course not found with id: " + id));
+        return course.getModules();
     }
 
-    // Get modules by course name
     public List<AllModule> getModulesByCourseName(String name) {
-        return courseRepository.findByName(name)
-                .map(AllCourse::getModules)
-                .orElseThrow(() -> new RuntimeException("Course not found"));
+        AllCourse course = courseRepository.findByName(name)
+                .orElseThrow(() -> new RuntimeException("Course not found with name: " + name));
+        return course.getModules();
     }
 
-    // Get groups by course name
     public List<AllGroups> getGroupsByCourseName(String name) {
-        return courseRepository.findByName(name)
-                .map(AllCourse::getGroups)
-                .orElseThrow(() -> new RuntimeException("Course not found"));
+        AllCourse course = courseRepository.findByName(name)
+                .orElseThrow(() -> new RuntimeException("Course not found with name: " + name));
+        return course.getGroups();
     }
-
 }

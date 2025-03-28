@@ -1,6 +1,10 @@
 package com.smartsched.model;
 
+
+
+
 public class AllGroups {
+
     private String groupId;
     private String groupName;
     
