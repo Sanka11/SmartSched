@@ -24,35 +24,65 @@ public class ScheduleService {
     @Autowired
     private InstructorAssignmentRepository instructorRepo;
 
+    // ✅ Get Student Timetable (Filtered by groupId)
     public Map<String, List<Map<String, Object>>> getScheduleForStudent(String email) {
-        Optional<StudentEnrollment> optionalStudent = studentRepo.findByEmail(email);
-        if (optionalStudent.isEmpty())
-            return null;
-        StudentEnrollment student = optionalStudent.get();
+        StudentEnrollment student = studentRepo.findAll().stream()
+                .filter(s -> email.equalsIgnoreCase(s.getEmail()))
+                .findFirst()
+                .orElse(null);
+
+        if (student == null || student.getCourseClasses() == null) {
+            return Collections.singletonMap("timetable", new ArrayList<>());
+        }
 
         Set<String> groupIds = new HashSet<>(student.getCourseClasses().values());
 
         GeneratedSchedule latestSchedule = scheduleRepo.findTopByOrderByIdDesc();
-        if (latestSchedule == null)
-            return null;
+        if (latestSchedule == null || latestSchedule.getTimetable() == null) {
+            return Collections.singletonMap("timetable", new ArrayList<>());
+        }
 
-        return latestSchedule.getTimetable().stream()
-                .filter(entry -> groupIds.contains((String) entry.get("group_id")))
-                .collect(Collectors.groupingBy(e -> (String) e.get("day")));
+        Set<String> seen = new HashSet<>();
+        List<Map<String, Object>> filtered = latestSchedule.getTimetable().stream()
+                .filter(entry -> groupIds.contains(String.valueOf(entry.get("group_id"))))
+                .filter(entry -> {
+                    String key = entry.get("module") + "|" + entry.get("group_id") + "|" +
+                            entry.get("day") + "|" + entry.get("startTime") + "|" + entry.get("endTime");
+                    return seen.add(key); // eliminate duplicates
+                })
+                .collect(Collectors.toList());
+
+        return Collections.singletonMap("timetable", filtered);
     }
 
+    // ✅ Get Instructor Timetable (Filtered by instructorId)
     public Map<String, List<Map<String, Object>>> getScheduleForInstructor(String email) {
-        Optional<InstructorAssignment> optionalInstructor = instructorRepo.findByEmail(email);
-        if (optionalInstructor.isEmpty())
-            return null;
-        InstructorAssignment instructor = optionalInstructor.get();
+        InstructorAssignment instructor = instructorRepo.findAll().stream()
+                .filter(i -> email.equalsIgnoreCase(i.getEmail()))
+                .findFirst()
+                .orElse(null);
+
+        if (instructor == null) {
+            return Collections.singletonMap("timetable", new ArrayList<>());
+        }
+
+        String instructorId = String.valueOf(instructor.getId());
 
         GeneratedSchedule latestSchedule = scheduleRepo.findTopByOrderByIdDesc();
-        if (latestSchedule == null)
-            return null;
+        if (latestSchedule == null || latestSchedule.getTimetable() == null) {
+            return Collections.singletonMap("timetable", new ArrayList<>());
+        }
 
-        return latestSchedule.getTimetable().stream()
-                .filter(entry -> instructor.getId().equals(entry.get("instructor_id")))
-                .collect(Collectors.groupingBy(e -> (String) e.get("day")));
+        Set<String> seen = new HashSet<>();
+        List<Map<String, Object>> filtered = latestSchedule.getTimetable().stream()
+                .filter(entry -> instructorId.equals(String.valueOf(entry.get("instructor_id"))))
+                .filter(entry -> {
+                    String key = entry.get("module") + "|" + entry.get("instructor_id") + "|" +
+                            entry.get("day") + "|" + entry.get("startTime") + "|" + entry.get("endTime");
+                    return seen.add(key); // eliminate duplicates
+                })
+                .collect(Collectors.toList());
+
+        return Collections.singletonMap("timetable", filtered);
     }
 }

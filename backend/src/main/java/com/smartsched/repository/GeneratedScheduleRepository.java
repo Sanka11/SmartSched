@@ -6,5 +6,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface GeneratedScheduleRepository extends MongoRepository<GeneratedSchedule, String> {
-    GeneratedSchedule findTopByOrderByIdDesc(); // Get latest generated schedule
+
+    // Fetch the latest generated schedule (by insertion order)
+    GeneratedSchedule findTopByOrderByIdDesc();
 }

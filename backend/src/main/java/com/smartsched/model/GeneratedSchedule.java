@@ -2,6 +2,7 @@ package com.smartsched.model;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+
 import java.util.List;
 import java.util.Map;
 
@@ -11,9 +12,21 @@ public class GeneratedSchedule {
     @Id
     private String id;
 
-    private String generatedBy;
-    private int fitnessScore;
-    private List<Map<String, Object>> timetable; // Dynamic session structure
+    private String generatedBy; // Who generated the schedule (e.g., admin or AI)
+    private int fitnessScore; // From Genetic Algorithm fitness evaluation
+    private List<Map<String, Object>> timetable; // Dynamic list of session info
+
+    // Default constructor
+    public GeneratedSchedule() {
+    }
+
+    // All-args constructor (optional, helpful for testing)
+    public GeneratedSchedule(String id, String generatedBy, int fitnessScore, List<Map<String, Object>> timetable) {
+        this.id = id;
+        this.generatedBy = generatedBy;
+        this.fitnessScore = fitnessScore;
+        this.timetable = timetable;
+    }
 
     // Getters and Setters
     public String getId() {
