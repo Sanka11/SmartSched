@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import registerImage from "../assets/signuppageimage.jpg"; // Adjust the path to your image
 
 // Import icons (using react-icons)
-import { FaUser, FaEnvelope, FaLock, FaPhone } from "react-icons/fa";
+import { FaUser, FaEnvelope, FaLock, FaPhone, FaEye, FaEyeSlash } from "react-icons/fa";
 
 const RegisterPage = () => {
   const [user, setUser] = useState({
@@ -18,11 +18,16 @@ const RegisterPage = () => {
     permissions: ["read"], // Default permissions for new users
   });
   const [errors, setErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
 
   const navigate = useNavigate();
 
   const handleChange = (e) => {
     setUser({ ...user, [e.target.name]: e.target.value });
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword((prevState) => !prevState);
   };
 
   const validateForm = () => {
@@ -108,14 +113,20 @@ const RegisterPage = () => {
             <div className="relative">
               <FaLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 name="password"
                 placeholder="Password"
-                className="border p-3 pl-10 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                className="border p-3 pl-10 pr-10 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                 value={user.password}
                 onChange={handleChange}
                 required
               />
+              <span
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 cursor-pointer"
+                onClick={togglePasswordVisibility}
+              >
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
+              </span>
               {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
             </div>
             <div className="relative">
