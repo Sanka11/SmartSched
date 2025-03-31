@@ -326,7 +326,9 @@ const StudentEnrollment = () => {
   };
 
   // Handle module removal with confirmation
-  const handleRemoveModule = async (courseName, moduleName) => {
+  const handleRemoveModule = async (data) => {
+    const { courseName, moduleName } = data;
+    
     if (!moduleName) {
       toast.warning("Module name is required.");
       return;
@@ -336,11 +338,14 @@ const StudentEnrollment = () => {
       const response = await axios.delete(
         `http://localhost:8080/api/student-enrollments/${selectedUser.id}/courses/${encodeURIComponent(courseName)}/modules/${encodeURIComponent(moduleName)}`
       );
+      
+      // Create updated student object
       const updatedStudent = {
-        ...response.data,
-        fullName: response.data.firstName + ' ' + response.data.lastName,
-        courseClasses: response.data.courseClasses || { ...selectedUser.courseClasses },
-        courseModules: response.data.courseModules || { ...selectedUser.courseModules }
+        ...selectedUser,
+        courseModules: {
+          ...selectedUser.courseModules,
+          [courseName]: selectedUser.courseModules[courseName].filter(mod => mod !== moduleName)
+        }
       };
       
       setSelectedUser(updatedStudent);
@@ -549,7 +554,10 @@ const StudentEnrollment = () => {
                             >
                               <span className="text-gray-700">{moduleName}</span>
                               <button
-                                onClick={() => showConfirmation("module", { courseName, moduleName }, handleRemoveModule)}
+                                onClick={() => showConfirmation("module", { 
+                                  courseName: courseName, 
+                                  moduleName: moduleName 
+                                }, handleRemoveModule)}
                                 className="px-3 py-1 text-sm bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors flex items-center gap-1"
                               >
                                 <XCircleIcon className="w-4 h-4" />
