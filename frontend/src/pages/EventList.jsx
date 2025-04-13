@@ -3,6 +3,9 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { FaEdit, FaTrashAlt, FaEye, FaCalendarAlt } from "react-icons/fa";
 import { FiPlus, FiSearch, FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
+
 
 const EventListPage = () => {
   const [events, setEvents] = useState([]);
@@ -11,6 +14,36 @@ const EventListPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const eventsPerPage = 5;
   const navigate = useNavigate();
+
+  const generateReport = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text("Event Report", 14, 22);
+  
+    const tableColumn = ["Event Name", "Date", "Time", "Location", "Committee"];
+    const tableRows = [];
+  
+    events.forEach((event) => {
+      const rowData = [
+        event.eventName,
+        event.eventDate,
+        event.eventTime,
+        event.location,
+        event.orgCommittee,
+      ];
+      tableRows.push(rowData);
+    });
+  
+    doc.autoTable({
+      head: [tableColumn],
+      body: tableRows,
+      startY: 30,
+      styles: { fontSize: 10 },
+    });
+  
+    doc.save("Event_Report.pdf");
+  };
+  
 
   useEffect(() => {
     fetchEvents();
@@ -99,6 +132,16 @@ const EventListPage = () => {
               Add New Event
             </span>
           </button>
+          <button onClick={generateReport}
+                 className="flex items-center px-6 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white font-medium rounded-xl shadow-lg hover:shadow-xl hover:from-orange-600 hover:to-red-700 transition-all duration-300 transform hover:scale-105 group"
+                 
+                >
+                  <FiPlus className="mr-2 group-hover:rotate-90 transition-transform duration-300" />
+                  <span className="group-hover:translate-x-1 transition-transform duration-300">
+                    Generate Report
+                  </span>
+                </button>
+
         </div>
 
         {/* Events Table */}
@@ -172,7 +215,8 @@ const EventListPage = () => {
                         </button>
                         <button
                           onClick={() => navigate(`/update-event/${event.eventId}`)}
-                          className="flex items-center px-4 py-2 bg-amber-600/90 text-white rounded-lg hover:bg-amber-700 transition group/action"
+                          className="flex items-center px-4 py-2 bg-green-600/90 text-white rounded-lg hover:bg-green-700 transition group/action"
+
                         >
                           <FaEdit className="mr-2 group-hover/action:animate-bounce" />
                           Edit

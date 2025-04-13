@@ -10,7 +10,7 @@ const CreateEventCourse = () => {
     };
 
     const handleCreateCourse = () => {
-        navigate('/courses');  // Navigate to CourseForm page
+        navigate('/AllCourseAndModules');  // Navigate to CourseForm page
     };
 
     return (
