@@ -122,7 +122,7 @@ def crossover(parent1, parent2):
 # === Mutation ===
 def mutate(timetable):
     if len(timetable) < 2:
-        return timetable  # Not enough sessions to mutate
+        return timetable  
 
     if random.random() < MUTATION_RATE:
         i, j = random.sample(range(len(timetable)), 2)

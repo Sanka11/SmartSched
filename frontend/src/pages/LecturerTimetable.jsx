@@ -5,11 +5,13 @@ const LecturerTimetable = () => {
   const [timetable, setTimetable] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
   const user = JSON.parse(localStorage.getItem("user"));
   const email = user?.email;
 
   const fetchTimetable = async () => {
+    setLoading(true);
     try {
       const response = await axios.get(
         `http://localhost:8080/api/timetable/instructor/${email}`
@@ -17,24 +19,47 @@ const LecturerTimetable = () => {
       const data = response.data?.timetable || [];
       setTimetable(data);
       setLoading(false);
+
+      if (data.length === 0) {
+        setError("You are not yet assigned to any modules. Please contact admin panel.");
+      } else {
+        setError("");
+      }
     } catch (err) {
       console.error("Error fetching timetable", err);
-      setMessage("Failed to fetch timetable.");
+      setError("❌ Failed to fetch timetable.");
       setLoading(false);
     }
   };
 
   const generateTimetable = async () => {
     setMessage("⏳ Generating timetable...");
+    setError("");
     try {
       const response = await axios.get(
         `http://localhost:8080/api/timetable/generate/${email}/lecturer`
       );
-      setMessage(response.data);
-      setTimeout(fetchTimetable, 3000); // wait 3s then refetch
+      const msg = response.data;
+
+      if (msg.includes("❌ No valid sessions")) {
+        setMessage("");
+        setError("You are not yet assigned to any modules. Please contact admin panel.");
+        setTimetable([]);
+        return;
+      }
+
+      if (msg.includes("✅ Timetable generation started")) {
+        setTimeout(() => {
+          fetchTimetable();
+          setMessage("");
+        }, 3000);
+      } else {
+        setMessage(msg);
+      }
     } catch (err) {
       console.error("Error generating timetable", err);
-      setMessage("❌ Failed to generate timetable.");
+      setMessage("");
+      setError("❌ Failed to generate timetable.");
     }
   };
 
@@ -48,9 +73,9 @@ const LecturerTimetable = () => {
 
       {loading ? (
         <p>Loading...</p>
-      ) : timetable.length === 0 ? (
+      ) : error ? (
         <>
-          <p>No timetable found. Please generate it first.</p>
+          <p className="text-red-600">{error}</p>
           <button
             onClick={generateTimetable}
             className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
@@ -79,7 +104,9 @@ const LecturerTimetable = () => {
         </div>
       )}
 
-      {message && <p className="mt-4 text-sm text-gray-600">{message}</p>}
+      {message && !loading && (
+        <p className="mt-4 text-sm text-gray-600">{message}</p>
+      )}
     </div>
   );
 };

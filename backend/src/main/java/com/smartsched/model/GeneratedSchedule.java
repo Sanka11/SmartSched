@@ -12,7 +12,7 @@ public class GeneratedSchedule {
     @Id
     private String id;
 
-    private String generatedBy; // Who generated the schedule (e.g., admin or AI)
+    private String generatedBy; // Who generated the schedule
     private int fitnessScore; // From Genetic Algorithm fitness evaluation
     private List<Map<String, Object>> timetable; // Dynamic list of session info
 
