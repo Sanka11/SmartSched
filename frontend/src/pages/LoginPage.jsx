@@ -50,7 +50,7 @@ const LoginPage = () => {
       else if (userRole === "assignment manager") {
         navigate("/assignmentdashboard");
       }else if (userRole === "course manager") {
-        navigate("/course manager");
+        navigate("/eventcourse");
       }else if (userRole === "lecturer") {
         navigate("/lecturer");
       }else {
