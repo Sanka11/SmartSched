@@ -1,11 +1,15 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
-import LoginPage from "./pages/LoginPage";
-import AssignmentDashboard from "./pages/AssignmentDashboard";
-import AssignInstructor from "./pages/AssignInstructor";
+import LoginPage from "./pages/LoginPage";  // Create LoginPage later
+import AssignmentDashboard from "./pages/AssignmentDashboard"; // Create AssignmentDashboard later
+import AssignInstructor from "./pages/AssignInstructor"; // Create AssignInstructor later
 import EnrollStudents from "./pages/EnrollStudents";
-import RegisterPage from "./pages/RegisterPage";
+
+import CourseListPage from "./pages/CourseList";  //create CourseListPage
+import CourseFormPage from "./pages/CourseForm"; // create CourseFormPage
+
+import RegisterPage from "./pages/RegisterPage"; // Create RegisterPage later
 import UserManagerPage from "./pages/UserManagerPage";
 import GenerateReportAssignManager from "./pages/GenerateReportAssignManager";
 import CourseClassesPage from "./pages/CourseClassesPage";
@@ -28,6 +32,17 @@ import LocationManager from "./pages/LocationManager";
 import StudentCourses from "./pages/StudentCourses";
 import InstructorCourses from "./pages/InstructorCourses";
 
+//AI Imports
+import AIscheduler from "./pages/AIscheduler";
+import UserTimetable from "./pages/UserTimetable";
+import StudentTimetable from "./pages/StudentTimetable";
+import StudentDashboard from "./pages/StudentDashboard";
+import LecturerTimetable from "./pages/LecturerTimetable";
+import LecturerDashboard from "./pages/LecturerDashboard";
+
+
+
+
 function App() {
   return (
     <Routes>
@@ -37,6 +52,9 @@ function App() {
       <Route path="/assignmentdashboard" element={<AssignmentDashboard />} />
       <Route path="/assign-instructors" element={<AssignInstructor />} />
       <Route path="/enroll-students" element={<EnrollStudents />} />
+      <Route path="/courses" element={<CourseListPage />} />
+      <Route path="/add-course" element={<CourseFormPage />} />
+      <Route path="/edit-course/:id" element={<CourseFormPage />} />
       <Route path="/user-manager" element={<UserManagerPage />} />
       <Route path="/AddUser" element={<AddUser />} />
       <Route path="/UserProfile" element={<UserProfile />} />
@@ -66,6 +84,14 @@ function App() {
       <Route path="/view-event/:eventId" element={<EventDetails />} />
       <Route path="/update-event/:eventId" element={<EventForm />} />
       <Route path="/AllCourseAndModules" element={<AllCourseAndModules />} />
+      <Route path="/generate-reports-assign" element={<GenerateReportAssignManager />} />
+      <Route path="/ai-scheduler" element={<AIscheduler />} /> {/*AI Sceduler*/}
+      <Route path="/my-timetable" element={<UserTimetable />} />
+      <Route path="/student/timetable" element={<StudentTimetable />} />
+      <Route path="/student/dashboard" element={<StudentDashboard />} />
+      <Route path="/lecturer/timetable" element={<LecturerTimetable />} />
+      <Route path="/lecturer/dashboard" element={<LecturerDashboard />} />
+
     </Routes>
   );
 }
