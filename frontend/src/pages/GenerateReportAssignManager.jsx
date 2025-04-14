@@ -1,7 +1,14 @@
 import { useState, useRef } from "react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
-import { AcademicCapIcon, UserGroupIcon, UserIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
+import { 
+  AcademicCapIcon, 
+  UserGroupIcon, 
+  UserIcon, 
+  ArrowDownTrayIcon,
+  Bars3Icon,
+  XMarkIcon 
+} from "@heroicons/react/24/outline";
 import SideNav from "./SideNav";
 
 function GenerateReportAssignManager() {
@@ -9,6 +16,8 @@ function GenerateReportAssignManager() {
   const [students, setStudents] = useState([]);
   const [activeReport, setActiveReport] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const tableRef = useRef(null);
 
   const fetchInstructorAssignments = async () => {
@@ -61,168 +70,183 @@ function GenerateReportAssignManager() {
   };
 
   return (
-    <div className=" flex min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
-      <SideNav />
-      <div className="p-8 w-full">
-      
-      <div className="max-w-7xl mx-auto">
-        <div className="flex items-center gap-3 mb-8">
-          <AcademicCapIcon className="h-12 w-12 text-blue-600" />
-          <h1 className="text-3xl font-bold text-gray-800">
-            Academic Reporting System
-          </h1>
-        </div>
+    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+      <SideNav 
+        sidebarOpen={sidebarOpen}
+        toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+        mobileSidebarOpen={mobileSidebarOpen}
+        toggleMobileSidebar={setMobileSidebarOpen}
+      />
 
-        {/* Control Panel */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button
-              onClick={fetchInstructorAssignments}
-              className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-lg transition-all"
-              disabled={loading}
-            >
-              <UserIcon className="h-5 w-5" />
-              {loading && activeReport === 'instructors' ? (
-                <span>Loading Assignments...</span>
-              ) : (
-                <span>Show Instructor Assignments</span>
-              )}
-            </button>
-
-            <button
-              onClick={fetchStudentEnrollments}
-              className="flex items-center justify-center gap-2 px-6 py-3 bg-green-100 hover:bg-green-200 text-green-800 rounded-lg transition-all"
-              disabled={loading}
-            >
-              <UserGroupIcon className="h-5 w-5" />
-              {loading && activeReport === 'students' ? (
-                <span>Loading Enrollments...</span>
-              ) : (
-                <span>Show Student Enrollments</span>
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Report Display Area */}
-        {activeReport === 'instructors' && (
-          <div className="animate-fade-in">
-            <div className="flex items-center justify-between mb-6 p-4 bg-white rounded-t-xl shadow-lg">
-              <h2 className="text-2xl font-semibold text-gray-800 flex items-center gap-2">
-                <UserIcon className="h-6 w-6 text-blue-600" />
-                Instructor Assignments
-              </h2>
+      <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? "lg:ml-64" : "lg:ml-20"}`}>
+        <div className="p-4 lg:p-8 w-full">
+          <div className="max-w-7xl mx-auto">
+            {/* Mobile header */}
+            <div className="lg:hidden flex items-center mb-6">
               <button
-                onClick={() => downloadPDF("instructor_assignments", "Instructor Assignments")}
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
+                onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+                className="mr-4 p-2 rounded-lg bg-blue-100 text-blue-600"
               >
-                <ArrowDownTrayIcon className="h-5 w-5" />
-                Export PDF
+                {mobileSidebarOpen ? (
+                  <XMarkIcon className="w-5 h-5" />
+                ) : (
+                  <Bars3Icon className="w-5 h-5" />
+                )}
               </button>
+              <div className="flex items-center gap-3">
+                <AcademicCapIcon className="h-8 w-8 text-blue-600" />
+                <h1 className="text-xl font-bold text-gray-800">
+                  Academic Reporting
+                </h1>
+              </div>
             </div>
 
-            <div ref={tableRef} className="bg-white rounded-b-xl shadow-lg overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-4 text-left font-medium text-gray-700">Instructor</th>
-                    <th className="px-6 py-4 text-left font-medium text-gray-700">Email</th>
-                    <th className="px-6 py-4 text-left font-medium text-gray-700">Modules</th>
-                    <th className="px-6 py-4 text-left font-medium text-gray-700">Assigned Classes</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {instructors.map((instructor) => (
-                    <tr key={instructor.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 font-medium text-gray-800">
-                        {instructor.firstName} {instructor.lastName}
-                      </td>
-                      <td className="px-6 py-4 text-gray-600">{instructor.email}</td>
-                      <td className="px-6 py-4">
-                        <div className="flex flex-wrap gap-2">
-                          {instructor.modules?.map((module, index) => (
-                            <span
-                              key={index}
-                              className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
-                            >
-                              {module}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex flex-wrap gap-2">
-                          {instructor.modules?.map((module, index) => (
-                            <span
-                              key={index}
-                              className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm"
-                            >
-                              {instructor.classes[module] || 'Not assigned'}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            {/* Desktop header */}
+            <div className="hidden lg:flex items-center gap-3 mb-8">
+              <AcademicCapIcon className="h-12 w-12 text-blue-600" />
+              <h1 className="text-3xl font-bold text-gray-800">
+                Academic Reporting System
+              </h1>
             </div>
+
+            {/* Control Panel */}
+            <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <button
+                  onClick={fetchInstructorAssignments}
+                  className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-lg transition-all"
+                  disabled={loading}
+                >
+                  <UserIcon className="h-5 w-5" />
+                  {loading && activeReport === 'instructors' ? (
+                    <span>Loading Assignments...</span>
+                  ) : (
+                    <span>Show Instructor Assignments</span>
+                  )}
+                </button>
+
+                <button
+                  onClick={fetchStudentEnrollments}
+                  className="flex items-center justify-center gap-2 px-6 py-3 bg-green-100 hover:bg-green-200 text-green-800 rounded-lg transition-all"
+                  disabled={loading}
+                >
+                  <UserGroupIcon className="h-5 w-5" />
+                  {loading && activeReport === 'students' ? (
+                    <span>Loading Enrollments...</span>
+                  ) : (
+                    <span>Show Student Enrollments</span>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Report Display Area */}
+            {activeReport === 'instructors' && (
+              <div className="animate-fade-in">
+                <div className="flex items-center justify-between mb-6 p-4 bg-white rounded-t-xl shadow-lg">
+                  <h2 className="text-2xl font-semibold text-gray-800 flex items-center gap-2">
+                    <UserIcon className="h-6 w-6 text-blue-600" />
+                    Instructor Assignments
+                  </h2>
+                  <button
+                    onClick={() => downloadPDF("instructor_assignments", "Instructor Assignments")}
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
+                  >
+                    <ArrowDownTrayIcon className="h-5 w-5" />
+                    Export PDF
+                  </button>
+                </div>
+
+                <div ref={tableRef} className="bg-white rounded-b-xl shadow-lg overflow-hidden">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-4 text-left font-medium text-gray-700">Instructor</th>
+                        <th className="px-6 py-4 text-left font-medium text-gray-700">Email</th>
+                        <th className="px-6 py-4 text-left font-medium text-gray-700">Modules</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {instructors.map((instructor) => (
+                        <tr key={instructor.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-6 py-4 font-medium text-gray-800">
+                            {instructor.firstName} {instructor.lastName}
+                          </td>
+                          <td className="px-6 py-4 text-gray-600">{instructor.email}</td>
+                          <td className="px-6 py-4">
+                            <div className="flex flex-wrap gap-2">
+                              {instructor.modules?.map((module, index) => (
+                                <span
+                                  key={index}
+                                  className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+                                >
+                                  {module}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {activeReport === 'students' && (
+              <div className="animate-fade-in">
+                <div className="flex items-center justify-between mb-6 p-4 bg-white rounded-t-xl shadow-lg">
+                  <h2 className="text-2xl font-semibold text-gray-800 flex items-center gap-2">
+                    <UserGroupIcon className="h-6 w-6 text-green-600" />
+                    Student Enrollments
+                  </h2>
+                  <button
+                    onClick={() => downloadPDF("student_enrollments", "Student Enrollments")}
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
+                  >
+                    <ArrowDownTrayIcon className="h-5 w-5" />
+                    Export PDF
+                  </button>
+                </div>
+
+                <div ref={tableRef} className="bg-white rounded-b-xl shadow-lg overflow-hidden">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-4 text-left font-medium text-gray-700">Student</th>
+                        <th className="px-6 py-4 text-left font-medium text-gray-700">Email</th>
+                        <th className="px-6 py-4 text-left font-medium text-gray-700">Enrolled Courses</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {students.map((student) => (
+                        <tr key={student.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-6 py-4 font-medium text-gray-800">
+                            {student.firstName} {student.lastName}
+                          </td>
+                          <td className="px-6 py-4 text-gray-600">{student.email}</td>
+                          <td className="px-6 py-4">
+                            <div className="flex flex-wrap gap-2">
+                              {student.courses?.map((course, index) => (
+                                <span
+                                  key={index}
+                                  className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm"
+                                >
+                                  {course}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
-        )}
-
-        {activeReport === 'students' && (
-          <div className="animate-fade-in">
-            <div className="flex items-center justify-between mb-6 p-4 bg-white rounded-t-xl shadow-lg">
-              <h2 className="text-2xl font-semibold text-gray-800 flex items-center gap-2">
-                <UserGroupIcon className="h-6 w-6 text-green-600" />
-                Student Enrollments
-              </h2>
-              <button
-                onClick={() => downloadPDF("student_enrollments", "Student Enrollments")}
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
-              >
-                <ArrowDownTrayIcon className="h-5 w-5" />
-                Export PDF
-              </button>
-            </div>
-
-            <div ref={tableRef} className="bg-white rounded-b-xl shadow-lg overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-4 text-left font-medium text-gray-700">Student</th>
-                    <th className="px-6 py-4 text-left font-medium text-gray-700">Email</th>
-                    <th className="px-6 py-4 text-left font-medium text-gray-700">Enrolled Courses</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {students.map((student) => (
-                    <tr key={student.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 font-medium text-gray-800">
-                        {student.firstName} {student.lastName}
-                      </td>
-                      <td className="px-6 py-4 text-gray-600">{student.email}</td>
-                      <td className="px-6 py-4">
-                        <div className="flex flex-wrap gap-2">
-                          {student.courses?.map((course, index) => (
-                            <span
-                              key={index}
-                              className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm"
-                            >
-                              {course}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
+        </div>
       </div>
-    </div>
     </div>
   );
 }

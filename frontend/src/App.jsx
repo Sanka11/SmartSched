@@ -22,6 +22,7 @@ import UserProfile from "./pages/UserProfile";
 import CreateEventCourse from "./pages/CreateEventCourse";
 
 import AllCourseAndModules from "./pages/AllCourseAndModules";
+import LocationManager from "./pages/LocationManager";
 
 
 function App() {
@@ -60,6 +61,7 @@ function App() {
       <Route path="/view-event/:eventId" element={<EventDetails />} />
       <Route path="/update-event/:eventId" element={<EventForm />} />
       <Route path="/AllCourseAndModules" element={<AllCourseAndModules />} />
+      <Route path="/locations" element={<LocationManager />} />
       
     </Routes>
   );
