@@ -48,9 +48,9 @@ public class ScheduleController {
             ProcessBuilder pb = new ProcessBuilder(
                     pythonPath, scriptPath,
                     "--email", email,
-                        "--role", role);
-                    
-                    pb.directory(new File(System.getProperty("user.dir")));
+                    "--role", role);
+
+            pb.directory(new File(System.getProperty("user.dir")));
             pb.redirectErrorStream(true);
 
             Process process = pb.start();

@@ -35,7 +35,9 @@ public class TimetableService {
         String role = user.getRole();
         String email = user.getEmail();
 
-        GeneratedSchedule latestSchedule = scheduleRepository.findTopByOrderByIdDesc();
+        GeneratedSchedule latestSchedule = scheduleRepository
+                .findTopByGeneratedByAndTimetableNotNullOrderByGeneratedAtDesc(email);
+
         if (latestSchedule == null) {
             throw new RuntimeException("No schedule found");
         }

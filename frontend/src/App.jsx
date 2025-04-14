@@ -39,6 +39,10 @@ import StudentTimetable from "./pages/StudentTimetable";
 import StudentDashboard from "./pages/StudentDashboard";
 import LecturerTimetable from "./pages/LecturerTimetable";
 import LecturerDashboard from "./pages/LecturerDashboard";
+import StudentCustomSchedule from "./pages/StudentCustomSchedule";
+import LecturerCustomSchedule from "./pages/LecturerCustomSchedule";
+import SuperadminDashboard from "./pages/superadmin/SuperadminDashboard";
+import GenerateTimetable from "./pages/superadmin/schedule/GenerateTimetable";
 
 
 
@@ -91,6 +95,12 @@ function App() {
       <Route path="/student/dashboard" element={<StudentDashboard />} />
       <Route path="/lecturer/timetable" element={<LecturerTimetable />} />
       <Route path="/lecturer/dashboard" element={<LecturerDashboard />} />
+      <Route path="/lecturer" element={<LecturerDashboard />} />
+      <Route path="/student" element={<StudentDashboard />} />
+      <Route path="/custom-schedule/student" element={<StudentCustomSchedule />} />
+      <Route path="/custom-schedule/lecturer" element={<LecturerCustomSchedule />} />
+      <Route path="/superadmin/dashboard" element={<SuperadminDashboard />} />
+      <Route path="/superadmin/schedule/generate" element={<GenerateTimetable />} />
 
     </Routes>
   );

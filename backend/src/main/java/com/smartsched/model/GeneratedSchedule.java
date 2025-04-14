@@ -2,7 +2,9 @@ package com.smartsched.model;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -12,25 +14,40 @@ public class GeneratedSchedule {
     @Id
     private String id;
 
-    private String generatedBy; // Who generated the schedule
-    private int fitnessScore; // From Genetic Algorithm fitness evaluation
-    private List<Map<String, Object>> timetable; // Dynamic list of session info
+    private String userEmail; // 🔥 ADD THIS FIELD
 
-    // Default constructor
+    private String generatedBy;
+    private int fitnessScore;
+
+    @Field(name = "generatedAt")
+    private LocalDateTime generatedAt;
+
+    private List<Map<String, Object>> timetable;
+
     public GeneratedSchedule() {
     }
 
-    // All-args constructor (optional, helpful for testing)
-    public GeneratedSchedule(String id, String generatedBy, int fitnessScore, List<Map<String, Object>> timetable) {
+    public GeneratedSchedule(String id, String userEmail, String generatedBy, int fitnessScore,
+            LocalDateTime generatedAt,
+            List<Map<String, Object>> timetable) {
         this.id = id;
+        this.userEmail = userEmail;
         this.generatedBy = generatedBy;
         this.fitnessScore = fitnessScore;
+        this.generatedAt = generatedAt;
         this.timetable = timetable;
     }
 
-    // Getters and Setters
     public String getId() {
         return id;
+    }
+
+    public String getUserEmail() {
+        return userEmail;
+    }
+
+    public void setUserEmail(String userEmail) {
+        this.userEmail = userEmail;
     }
 
     public String getGeneratedBy() {
@@ -47,6 +64,14 @@ public class GeneratedSchedule {
 
     public void setFitnessScore(int fitnessScore) {
         this.fitnessScore = fitnessScore;
+    }
+
+    public LocalDateTime getGeneratedAt() {
+        return generatedAt;
+    }
+
+    public void setGeneratedAt(LocalDateTime generatedAt) {
+        this.generatedAt = generatedAt;
     }
 
     public List<Map<String, Object>> getTimetable() {

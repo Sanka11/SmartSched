@@ -37,7 +37,9 @@ public class ScheduleService {
 
         Set<String> groupIds = new HashSet<>(student.getCourseClasses().values());
 
-        GeneratedSchedule latestSchedule = scheduleRepo.findTopByOrderByIdDesc();
+        GeneratedSchedule latestSchedule = scheduleRepo
+                .findTopByGeneratedByAndTimetableNotNullOrderByGeneratedAtDesc(email);
+
         if (latestSchedule == null || latestSchedule.getTimetable() == null) {
             return Collections.singletonMap("timetable", new ArrayList<>());
         }
@@ -46,9 +48,10 @@ public class ScheduleService {
         List<Map<String, Object>> filtered = latestSchedule.getTimetable().stream()
                 .filter(entry -> groupIds.contains(String.valueOf(entry.get("group_id"))))
                 .filter(entry -> {
-                    String key = entry.get("module") + "|" + entry.get("group_id") + "|" +
-                            entry.get("day") + "|" + entry.get("startTime") + "|" + entry.get("endTime");
-                    return seen.add(key); // eliminate duplicates
+                    String key = entry.get("module_name") + "|" + entry.get("group_name") + "|" +
+                            entry.get("day") + "|" + entry.get("start_time") + "|" + entry.get("end_time") + "|" +
+                            entry.get("location");
+                    return seen.add(key);
                 })
                 .collect(Collectors.toList());
 
@@ -68,7 +71,9 @@ public class ScheduleService {
 
         String instructorId = String.valueOf(instructor.getId());
 
-        GeneratedSchedule latestSchedule = scheduleRepo.findTopByOrderByIdDesc();
+        GeneratedSchedule latestSchedule = scheduleRepo
+                .findTopByGeneratedByAndTimetableNotNullOrderByGeneratedAtDesc(email);
+
         if (latestSchedule == null || latestSchedule.getTimetable() == null) {
             return Collections.singletonMap("timetable", new ArrayList<>());
         }
@@ -77,9 +82,11 @@ public class ScheduleService {
         List<Map<String, Object>> filtered = latestSchedule.getTimetable().stream()
                 .filter(entry -> instructorId.equals(String.valueOf(entry.get("instructor_id"))))
                 .filter(entry -> {
-                    String key = entry.get("module") + "|" + entry.get("instructor_id") + "|" +
-                            entry.get("day") + "|" + entry.get("startTime") + "|" + entry.get("endTime");
-                    return seen.add(key); // eliminate duplicates
+                    // Use a more strict key to eliminate duplicates
+                    String key = entry.get("module_name") + "|" + entry.get("group_name") + "|" +
+                            entry.get("day") + "|" + entry.get("start_time") + "|" + entry.get("end_time") + "|" +
+                            entry.get("location");
+                    return seen.add(key);
                 })
                 .collect(Collectors.toList());
 

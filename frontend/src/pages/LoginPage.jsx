@@ -1,22 +1,21 @@
 import React, { useState } from "react";
-import api from "../services/api";
+import api from "../services/api"; // ✅ Your Axios instance
 import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { FaEnvelope, FaLock, FaCheck, FaTimes } from "react-icons/fa";
-import { AiFillEye, AiFillEyeInvisible, AiOutlineClose } from "react-icons/ai";
+import { useAuth } from "../auth/AuthContext";
+
 import loginImage from "../assets/signuppageimage.jpg";
+import { FaEnvelope, FaLock } from "react-icons/fa";
+import { AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
 
 const LoginPage = () => {
-  const [credentials, setCredentials] = useState({
-    email: "",
-    password: "",
-  });
+  const [credentials, setCredentials] = useState({ email: "", password: "" });
   const [errorMessage, setErrorMessage] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [userRole, setUserRole] = useState("");
 
+  const { setUser } = useAuth(); // ✅ Get context setter
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -31,23 +30,62 @@ const LoginPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMessage("");
+
     setIsSubmitting(true);
-    
+
     try {
       const response = await api.post("/api/users/login", credentials);
+      const loggedUser = response.data;
+
+      // ✅ Save session
+      localStorage.setItem("user", JSON.stringify(loggedUser));
+      setUser(loggedUser);
+
+      alert("Login successful!");
+
+      // ✅ Redirect by role
+      const userRole = loggedUser.role;
+      switch (userRole) {
+        case "SUPERADMIN":
+          navigate("/superadmin/dashboard");
+          break;
+        case "admin":
+          navigate("/admin-dashboard");
+          break;
+        case "user-manager":
+          navigate("/user-manager");
+          break;
+        case "assignment manager":
+          navigate("/assignmentdashboard");
+          break;
+        case "course manager":
+          navigate("/eventcourse");
+          break;
+        case "student":
+          navigate("/student/dashboard");
+          break;
+        case "lecturer":
+          navigate("/lecturer/dashboard");
+          break;
+        default:
+          navigate("/dashboard");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      setErrorMessage(
+        error.response?.data || "Invalid email or password. Please try again."
+      );
+      const response = await api.post("/api/users/login", credentials);
       console.log("User logged in:", response.data);
-      
+
       // Store user data
       localStorage.setItem("user", JSON.stringify(response.data));
-      
+
       // Determine user role
       const role = response.data.role || "user";
       setUserRole(role);
       setShowSuccess(true);
-      
-    } catch (error) {
-      console.error("Error logging in:", error);
-      setErrorMessage(error.response?.data?.message || "Invalid email or password.");
     } finally {
       setIsSubmitting(false);
     }
@@ -89,13 +127,13 @@ const LoginPage = () => {
             exit={{ opacity: 0 }}
             className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50"
           >
-            <motion.div 
+            <motion.div
               className="bg-white rounded-xl p-8 max-w-md w-full relative shadow-2xl"
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
             >
-              <button 
+              <button
                 onClick={() => {
                   setShowSuccess(false);
                   redirectUser();
@@ -104,7 +142,7 @@ const LoginPage = () => {
               >
                 <AiOutlineClose size={20} />
               </button>
-              
+
               <div className="text-center">
                 <motion.div
                   initial={{ scale: 0 }}
@@ -127,15 +165,18 @@ const LoginPage = () => {
                     />
                   </svg>
                 </motion.div>
-                
-                <h2 className="text-3xl font-bold text-gray-800 mb-2">Login Successful!</h2>
+
+                <h2 className="text-3xl font-bold text-gray-800 mb-2">
+                  Login Successful!
+                </h2>
                 <p className="text-gray-600 mb-4">
-                  Welcome back! You're being redirected to your {userRole} dashboard.
+                  Welcome back! You're being redirected to your {userRole}{" "}
+                  dashboard.
                 </p>
                 <p className="text-sm text-gray-500 mb-6">
                   (Redirecting in 3 seconds...)
                 </p>
-                
+
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: "100%" }}
@@ -160,8 +201,12 @@ const LoginPage = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <h1 className="text-4xl font-bold text-gray-800 mb-2">Welcome Back!</h1>
-            <p className="text-gray-600 mb-6">Sign in to continue to SmartSched</p>
+            <h1 className="text-4xl font-bold text-gray-800 mb-2">
+              Welcome Back!
+            </h1>
+            <p className="text-gray-600 mb-6">
+              Sign in to continue to SmartSched
+            </p>
 
             {errorMessage && (
               <motion.div
@@ -183,7 +228,9 @@ const LoginPage = () => {
                   name="email"
                   placeholder="Email"
                   className={`border p-3 pl-10 rounded-lg w-full focus:outline-none focus:ring-2 transition-all ${
-                    errorMessage ? "border-red-300 focus:ring-red-200" : "border-gray-300 focus:ring-blue-200"
+                    errorMessage
+                      ? "border-red-300 focus:ring-red-200"
+                      : "border-gray-300 focus:ring-blue-200"
                   }`}
                   value={credentials.email}
                   onChange={handleChange}
@@ -199,7 +246,9 @@ const LoginPage = () => {
                   name="password"
                   placeholder="Password"
                   className={`border p-3 pl-10 pr-10 rounded-lg w-full focus:outline-none focus:ring-2 transition-all ${
-                    errorMessage ? "border-red-300 focus:ring-red-200" : "border-gray-300 focus:ring-blue-200"
+                    errorMessage
+                      ? "border-red-300 focus:ring-red-200"
+                      : "border-gray-300 focus:ring-blue-200"
                   }`}
                   value={credentials.password}
                   onChange={handleChange}
@@ -210,13 +259,20 @@ const LoginPage = () => {
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none"
                   onClick={togglePasswordVisibility}
                 >
-                  {showPassword ? <AiFillEyeInvisible size={20} /> : <AiFillEye size={20} />}
+                  {showPassword ? (
+                    <AiFillEyeInvisible size={20} />
+                  ) : (
+                    <AiFillEye size={20} />
+                  )}
                 </button>
               </div>
 
               {/* Forgot Password Link */}
               <div className="flex justify-end">
-                <a href="/forgot-password" className="text-sm text-blue-600 hover:underline">
+                <a
+                  href="/forgot-password"
+                  className="text-sm text-blue-600 hover:underline"
+                >
                   Forgot password?
                 </a>
               </div>
@@ -231,9 +287,25 @@ const LoginPage = () => {
               >
                 {isSubmitting ? (
                   <span className="flex items-center justify-center">
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <svg
+                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
                     </svg>
                     Signing In...
                   </span>
@@ -244,15 +316,18 @@ const LoginPage = () => {
             </form>
 
             <div className="mt-6 text-center text-gray-600">
-              Don't have an account?{" "}
-              <a href="/register" className="text-blue-600 hover:underline font-medium">
+              Don&apos;t have an account?{" "}
+              <a
+                href="/register"
+                className="text-blue-600 hover:underline font-medium"
+              >
                 Sign Up
               </a>
             </div>
           </motion.div>
         </div>
 
-        {/* Right side - Image */}
+        {/* Image */}
         <div className="hidden md:block w-1/2 relative">
           <img
             src={loginImage}
@@ -265,8 +340,12 @@ const LoginPage = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
             >
-              <h2 className="text-white text-2xl font-bold mb-2">Smart Scheduling</h2>
-              <p className="text-white/90">Efficient time management for everyone</p>
+              <h2 className="text-white text-2xl font-bold mb-2">
+                Smart Scheduling
+              </h2>
+              <p className="text-white/90">
+                Efficient time management for everyone
+              </p>
             </motion.div>
           </div>
         </div>

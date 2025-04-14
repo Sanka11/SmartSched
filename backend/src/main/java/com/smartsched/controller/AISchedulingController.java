@@ -6,14 +6,19 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/scheduler")
+@CrossOrigin(origins = "*") // ✅ Allows access from frontend
 public class AISchedulingController {
 
     @Autowired
     private AISchedulingService aiSchedulingService;
 
+    // ✅ Accepts query parameters from frontend
     @GetMapping("/generate")
-    @ResponseBody // Ensure JSON is returned properly
-    public String generateSchedule() {
-        return aiSchedulingService.generateSchedule();
+    @ResponseBody
+    public String generateSchedule(
+            @RequestParam("email") String email,
+            @RequestParam("role") String role) {
+
+        return aiSchedulingService.generateSchedule(email, role);
     }
 }

@@ -7,25 +7,25 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/users")
-@CrossOrigin(origins = "http://localhost:5173") // Allow frontend requests
+@CrossOrigin(origins = "http://localhost:5173") // Allow requests from frontend
 public class UserController {
 
     @Autowired
     private UserService userService;
-    
 
+    // ✅ Register new user
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody User user) {
         try {
-            // Set default role and permissions if not provided
             if (user.getRole() == null) {
-                user.setRole("user");
+                user.setRole("USER"); // Default role without ROLE_ prefix
             }
             if (user.getPermissions() == null) {
                 user.setPermissions(List.of("read"));
@@ -38,7 +38,7 @@ public class UserController {
         }
     }
 
-    // Login a user
+    // ✅ Login endpoint
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(@RequestBody Map<String, String> loginRequest) {
         String email = loginRequest.get("email");
@@ -52,29 +52,9 @@ public class UserController {
         }
     }
 
-
-
-
-    
-    // Update user role and permissions (Admin-only endpoint)
-    @PutMapping("/{userId}/role")
-    @PreAuthorize("hasRole('ADMIN')") // Restrict to admins
-    public ResponseEntity<?> updateUserRoleAndPermissions(
-            @PathVariable String userId,
-            @RequestParam(required = false) String role,
-            @RequestParam(required = false) List<String> permissions
-    ) {
-        try {
-            User updatedUser = userService.updateUserRoleAndPermissions(userId, role, permissions);
-            return new ResponseEntity<>(updatedUser, HttpStatus.OK);
-        } catch (RuntimeException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
-        }
-    }
-
-    // Get all users (Admin-only endpoint)
+    // ✅ Get all users (SUPERADMIN or ADMIN)
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')") // Restrict to admins
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN')")
     public ResponseEntity<?> getAllUsers() {
         try {
             List<User> users = userService.getAllUsers();
@@ -84,9 +64,42 @@ public class UserController {
         }
     }
 
-    // Delete a user by ID (Admin-only endpoint)
+    // ✅ Update user role and permissions
+    @PutMapping("/{userId}/role")
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN')")
+    public ResponseEntity<?> updateUserRoleAndPermissions(
+            @PathVariable String userId,
+            @RequestParam(required = false) String role,
+            @RequestParam(required = false) List<String> permissions) {
+        try {
+            User updatedUser = userService.updateUserRoleAndPermissions(userId, role, permissions);
+            return new ResponseEntity<>(updatedUser, HttpStatus.OK);
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    // ✅ Add a new user
+    @PostMapping("/add")
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN')")
+    public ResponseEntity<?> addUser(@RequestBody User user) {
+        try {
+            if (user.getRole() == null) {
+                user.setRole("USER");
+            }
+            if (user.getPermissions() == null) {
+                user.setPermissions(List.of("read"));
+            }
+            User newUser = userService.registerUser(user);
+            return new ResponseEntity<>(newUser, HttpStatus.CREATED);
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    // ✅ Delete user
     @DeleteMapping("/{userId}")
-    @PreAuthorize("hasRole('ADMIN')") // Restrict to admins
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN')")
     public ResponseEntity<?> deleteUser(@PathVariable String userId) {
         try {
             userService.deleteUser(userId);
@@ -96,7 +109,7 @@ public class UserController {
         }
     }
 
-
+    // ✅ Forgot password endpoint
     @PutMapping("/forgot-password")
     public ResponseEntity<String> updatePassword(@RequestBody Map<String, String> requestBody) {
         String email = requestBody.get("email");
@@ -111,24 +124,12 @@ public class UserController {
     }
     
 
-
-    @PostMapping("/add")
-@PreAuthorize("hasRole('ADMIN')") // Restrict to admins
-public ResponseEntity<?> addUser(@RequestBody User user) {
-    try {
-        User newUser = userService.registerUser(user);
-        return new ResponseEntity<>(newUser, HttpStatus.CREATED);
-    } catch (RuntimeException e) {
-        return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+    // ✅ Get user by ID
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('USER', 'SUPERADMIN', 'ADMIN')")
+    public ResponseEntity<?> getUserProfile(@PathVariable String id) {
+        Optional<User> user = userService.getUserById(id);
+        return user.map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
-}
-
-  // Get user profile by ID
-  @GetMapping("/{id}")
-  @PreAuthorize("hasAnyRole('USER', 'ADMIN')") // Authenticated users only
-  public ResponseEntity<?> getUserProfile(@PathVariable String id) {
-      Optional<User> user = userService.getUserById(id);
-      return user.map(ResponseEntity::ok)
-                 .orElseGet(() -> ResponseEntity.notFound().build());
-  }
 }

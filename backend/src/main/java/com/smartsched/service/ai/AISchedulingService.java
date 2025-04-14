@@ -7,14 +7,21 @@ import java.io.InputStreamReader;
 @Service
 public class AISchedulingService {
 
-    public String generateSchedule() {
-        try {
-            // 🔹 Use Python inside your virtual environment
-            ProcessBuilder pb = new ProcessBuilder("/Users/pramodravisanka/myvenv/bin/python3",
-                    "src/main/resources/ai/scheduler.py");
-            pb.redirectErrorStream(true); // Capture errors too
-            Process process = pb.start();
+    private static final String PYTHON_VENV = "/Users/pramodravisanka/Documents/Year 3 Semester 2/ITPM/smartsched/backend/src/main/resources/ai/venv/bin/python3";
+    private static final String SCRIPT_PATH = "src/main/resources/ai/scheduler.py";
 
+    public String generateSchedule(String email, String role) {
+        try {
+            // 🔹 Construct the command with arguments
+            ProcessBuilder pb = new ProcessBuilder(
+                    PYTHON_VENV,
+                    SCRIPT_PATH,
+                    "--email=" + email,
+                    "--role=" + role);
+
+            pb.redirectErrorStream(true); // Merge stdout and stderr
+
+            Process process = pb.start();
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             StringBuilder output = new StringBuilder();
             String line;
@@ -24,14 +31,17 @@ public class AISchedulingService {
                 output.append(line).append("\n");
             }
 
-            process.waitFor();
+            int exitCode = process.waitFor();
+            System.out.println("🔚 Python script exited with code: " + exitCode);
 
             String result = output.toString().trim();
             System.out.println("✅ Final Output Sent to API: " + result);
 
-            return result.isEmpty() ? "{\"error\": \"Python script returned empty output\"}" : result;
+            return result.isEmpty() ? "{\"error\": \"Python script returned no output.\"}" : result;
+
         } catch (Exception e) {
-            return "{\"error\": \"Error running AI Scheduler: " + e.getMessage() + "\"}";
+            e.printStackTrace();
+            return "{\"error\": \"Failed to run scheduler: " + e.getMessage() + "\"}";
         }
     }
 }
