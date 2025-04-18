@@ -56,13 +56,15 @@ public class UserService {
     }
 
 
-//update password   
-
     public boolean updatePassword(String email, String newPassword) {
         Optional<User> user = userRepository.findByEmail(email);
         if (user.isPresent()) {
             User existingUser = user.get();
-            existingUser.setPassword(newPassword);  // Assuming you have a setter for the password
+
+            // 🔒 Encrypt password before saving
+            String encodedPassword = passwordEncoder.encode(newPassword);
+            existingUser.setPassword(encodedPassword);
+
             userRepository.save(existingUser);
             return true;
         }
