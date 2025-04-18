@@ -33,6 +33,7 @@ D:\smartsched\SmartSched\backend\src\main\java\com\smartsched\repository\UserRep
 D:\smartsched\SmartSched\backend\src\main\java\com\smartsched\service\AllClassAssignmentService.java
 D:\smartsched\SmartSched\backend\src\main\java\com\smartsched\service\AllCourseService.java
 D:\smartsched\SmartSched\backend\src\main\java\com\smartsched\service\CourseService.java
+D:\smartsched\SmartSched\backend\src\main\java\com\smartsched\service\EmailService.java
 D:\smartsched\SmartSched\backend\src\main\java\com\smartsched\service\EventService.java
 D:\smartsched\SmartSched\backend\src\main\java\com\smartsched\service\GroupService.java
 D:\smartsched\SmartSched\backend\src\main\java\com\smartsched\service\InstructorAssignmentService.java

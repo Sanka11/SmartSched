@@ -16,30 +16,33 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
+
+    @Autowired
+private EmailService emailService;
+
     @Autowired
     private PasswordEncoder passwordEncoder;  
       
             
-     // Register a new user
-     public User registerUser(User user) {
-        // Check if the email is already registered
+    public User registerUser(User user) {
         if (userRepository.findByEmail(user.getEmail()).isPresent()) {
             throw new RuntimeException("Email already registered");
         }
-
-        // Set default role and permissions if not provided
+    
         if (user.getRole() == null) {
             user.setRole("user");
         }
         if (user.getPermissions() == null) {
             user.setPermissions(List.of("read"));
         }
-
-        // Hash the password before saving
+    
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-
-        // Save the user
-        return userRepository.save(user);
+        User savedUser = userRepository.save(user);
+    
+        // Send registration email
+        emailService.sendRegistrationEmail(savedUser.getEmail(), savedUser.getFullName());
+    
+        return savedUser;
     }
 
 //login
