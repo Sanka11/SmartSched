@@ -6,10 +6,13 @@ import {
   AcademicCapIcon,
   XCircleIcon,
   ExclamationTriangleIcon,
+  Bars3Icon,
+  XMarkIcon
 } from "@heroicons/react/24/outline";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import SideNav from "./SideNav";
+
 
 const AssignInstructor = () => {
   // State variables
@@ -21,6 +24,8 @@ const AssignInstructor = () => {
   const [selectedModule, setSelectedModule] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchActive, setIsSearchActive] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   // Confirmation modal state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -74,8 +79,12 @@ const AssignInstructor = () => {
     setIsSearchActive(e.target.value.length > 0);
   };
 
-  // Determine which users to display
-  const displayedUsers = isSearchActive ? filteredUsers : filteredUsers.slice(0, 6);
+  // Determine which users to display - hide others when an instructor is selected
+  const displayedUsers = selectedUser 
+    ? [] 
+    : isSearchActive 
+      ? filteredUsers 
+      : filteredUsers.slice(0, 6);
 
   // Handle user selection
   const handleUserSelect = (user) => {
@@ -362,48 +371,40 @@ const AssignInstructor = () => {
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
-      <SideNav />
-      <div className="p-8 w-full">
-        {/* Toast Container */}
-        <ToastContainer position="top-right" autoClose={3000} />
+      <SideNav 
+        sidebarOpen={sidebarOpen}
+        toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+        mobileSidebarOpen={mobileSidebarOpen}
+        toggleMobileSidebar={setMobileSidebarOpen}
+      />
 
-        {/* Confirmation Modal */}
-        {showDeleteModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl">
-              <div className="text-center">
-                <ExclamationTriangleIcon className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
-                <h3 className="text-2xl font-bold text-gray-800 mb-2">
-                  Confirm Deletion
-                </h3>
-                <p className="text-gray-600 mb-6">
-                  {deleteAction === "module"
-                    ? `Are you sure you want to delete the "${moduleToDelete}" module and its associated classes?`
-                    : `Are you sure you want to delete the class from "${moduleToDelete}"?`}
-                </p>
-                <div className="flex justify-center gap-4">
-                  <button
-                    onClick={() => setShowDeleteModal(false)}
-                    className="px-6 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleConfirmDelete}
-                    className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center gap-2"
-                  >
-                    <XCircleIcon className="w-5 h-5" />
-                    Confirm Delete
-                  </button>
-                </div>
-              </div>
+      <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? "lg:ml-64" : "lg:ml-20"}`}>
+        <div className="p-4 lg:p-8 w-full">
+          {/* Toast Container */}
+          <ToastContainer position="top-right" autoClose={3000} />
+
+          {/* Mobile header with toggle button */}
+          <div className="lg:hidden flex items-center mb-6">
+            <button
+              onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+              className="mr-4 p-2 rounded-lg bg-blue-100 text-blue-600"
+            >
+              {mobileSidebarOpen ? (
+                <XMarkIcon className="w-5 h-5" />
+              ) : (
+                <Bars3Icon className="w-5 h-5" />
+              )}
+            </button>
+            <div className="flex items-center gap-3">
+              <AcademicCapIcon className="h-8 w-8 text-blue-600" />
+              <h1 className="text-xl font-bold text-gray-800">
+                Instructor Management
+              </h1>
             </div>
           </div>
-        )}
 
-        <div className="max-w-6xl mx-auto">
-          {/* Header */}
-          <div className="mb-8">
+          {/* Desktop header */}
+          <div className="hidden lg:block mb-8">
             <h1 className="text-4xl font-bold text-gray-800 mb-2">
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
                 Instructor Management
@@ -414,53 +415,85 @@ const AssignInstructor = () => {
             </p>
           </div>
 
-          {/* Search Bar */}
-          <div className="mb-8 relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
-            </div>
-            <input
-              type="text"
-              placeholder="Search users..."
-              value={searchQuery}
-              onChange={handleSearchChange}
-              className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/50 backdrop-blur-sm"
-            />
-          </div>
-
-          {/* User Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {displayedUsers.map((user) => (
-              <div
-                key={user._id}
-                onClick={() => handleUserSelect(user)}
-                className={`group p-6 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer border-2 ${
-                  selectedUser?._id === user._id
-                    ? "border-blue-500"
-                    : selectedUser
-                    ? "hidden"
-                    : "border-transparent hover:border-blue-200"
-                }`}
-              >
-                <div className="flex items-start gap-4">
-                  <div className="p-3 bg-blue-100 rounded-xl">
-                    <UserCircleIcon className="w-8 h-8 text-blue-600" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
-                      {user.fullName}
-                    </h2>
-                    <p className="text-gray-500 text-sm">{user.email}</p>
-                    {instructors.some(instructor => instructor.email === user.email) && (
-                      <span className="inline-block mt-1 px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
-                        Instructor
-                      </span>
-                    )}
+          {/* Confirmation Modal */}
+          {showDeleteModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl">
+                <div className="text-center">
+                  <ExclamationTriangleIcon className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
+                  <h3 className="text-2xl font-bold text-gray-800 mb-2">
+                    Confirm Deletion
+                  </h3>
+                  <p className="text-gray-600 mb-6">
+                    {deleteAction === "module"
+                      ? `Are you sure you want to delete the "${moduleToDelete}" module and its associated classes?`
+                      : `Are you sure you want to delete the class from "${moduleToDelete}"?`}
+                  </p>
+                  <div className="flex justify-center gap-4">
+                    <button
+                      onClick={() => setShowDeleteModal(false)}
+                      className="px-6 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleConfirmDelete}
+                      className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center gap-2"
+                    >
+                      <XCircleIcon className="w-5 h-5" />
+                      Confirm Delete
+                    </button>
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          )}
+
+          {/* Search Bar - Only show when no instructor is selected */}
+          {!selectedUser && (
+            <div className="mb-8 relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search users..."
+                value={searchQuery}
+                onChange={handleSearchChange}
+                className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/50 backdrop-blur-sm"
+              />
+            </div>
+          )}
+
+          {/* User Cards - Only show when no instructor is selected */}
+          {!selectedUser && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              {displayedUsers.map((user) => (
+                <div
+                  key={user._id}
+                  onClick={() => handleUserSelect(user)}
+                  className="group p-6 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer border-2 border-transparent hover:border-blue-200"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 bg-blue-100 rounded-xl">
+                      <UserCircleIcon className="w-8 h-8 text-blue-600" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
+                        {user.fullName}
+                      </h2>
+                      <p className="text-gray-500 text-sm">{user.email}</p>
+                      {instructors.some(instructor => instructor.email === user.email) && (
+                        <span className="inline-block mt-1 px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                          Instructor
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Selected User/Instructor Section */}
           {selectedUser && (
