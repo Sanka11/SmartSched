@@ -14,7 +14,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/users")
-@CrossOrigin(origins = "http://localhost:5173") // Allow requests from frontend
+@CrossOrigin(origins = "http://localhost:5173")
 public class UserController {
 
     @Autowired
@@ -25,7 +25,7 @@ public class UserController {
     public ResponseEntity<?> registerUser(@RequestBody User user) {
         try {
             if (user.getRole() == null) {
-                user.setRole("USER"); // Default role without ROLE_ prefix
+                user.setRole("USER"); // Use consistent casing
             }
             if (user.getPermissions() == null) {
                 user.setPermissions(List.of("read"));
@@ -38,7 +38,7 @@ public class UserController {
         }
     }
 
-    // ✅ Login endpoint
+    // ✅ Login
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(@RequestBody Map<String, String> loginRequest) {
         String email = loginRequest.get("email");
@@ -52,9 +52,9 @@ public class UserController {
         }
     }
 
-    // ✅ Get all users (SUPERADMIN or ADMIN)
+    // ✅ Get all users (Admin + Superadmin only)
     @GetMapping
-    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
     public ResponseEntity<?> getAllUsers() {
         try {
             List<User> users = userService.getAllUsers();
@@ -64,24 +64,18 @@ public class UserController {
         }
     }
 
-    // ✅ Update user role and permissions
-    @PutMapping("/{userId}/role")
-    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN')")
-    public ResponseEntity<?> updateUserRoleAndPermissions(
-            @PathVariable String userId,
-            @RequestParam(required = false) String role,
-            @RequestParam(required = false) List<String> permissions) {
-        try {
-            User updatedUser = userService.updateUserRoleAndPermissions(userId, role, permissions);
-            return new ResponseEntity<>(updatedUser, HttpStatus.OK);
-        } catch (RuntimeException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
-        }
+    // ✅ Get user by ID (All roles)
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'SUPERADMIN')")
+    public ResponseEntity<?> getUserProfile(@PathVariable String id) {
+        Optional<User> user = userService.getUserById(id);
+        return user.map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    // ✅ Add a new user
+    // ✅ Add new user (Admin + Superadmin)
     @PostMapping("/add")
-    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
     public ResponseEntity<?> addUser(@RequestBody User user) {
         try {
             if (user.getRole() == null) {
@@ -97,9 +91,25 @@ public class UserController {
         }
     }
 
-    // ✅ Delete user
+    // ✅ Update role/permissions
+    @PutMapping("/{userId}/role")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    public ResponseEntity<?> updateUserRoleAndPermissions(
+            @PathVariable String userId,
+            @RequestParam(required = false) String role,
+            @RequestParam(required = false) List<String> permissions
+    ) {
+        try {
+            User updatedUser = userService.updateUserRoleAndPermissions(userId, role, permissions);
+            return new ResponseEntity<>(updatedUser, HttpStatus.OK);
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    // ✅ Delete user (Admin + Superadmin)
     @DeleteMapping("/{userId}")
-    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
     public ResponseEntity<?> deleteUser(@PathVariable String userId) {
         try {
             userService.deleteUser(userId);
@@ -109,27 +119,17 @@ public class UserController {
         }
     }
 
-    // ✅ Forgot password endpoint
+    // ✅ Forgot password
     @PutMapping("/forgot-password")
     public ResponseEntity<String> updatePassword(@RequestBody Map<String, String> requestBody) {
         String email = requestBody.get("email");
         String newPassword = requestBody.get("newPassword");
-    
+
         boolean isUpdated = userService.updatePassword(email, newPassword);
         if (isUpdated) {
             return ResponseEntity.ok("Password updated successfully");
         } else {
             return ResponseEntity.status(400).body("User not found or password update failed");
         }
-    }
-    
-
-    // ✅ Get user by ID
-    @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('USER', 'SUPERADMIN', 'ADMIN')")
-    public ResponseEntity<?> getUserProfile(@PathVariable String id) {
-        Optional<User> user = userService.getUserById(id);
-        return user.map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 }

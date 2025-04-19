@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import api from "../services/api"; // ✅ Your Axios instance
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import api from "../services/api";
 
 import loginImage from "../assets/signuppageimage.jpg";
-import { FaEnvelope, FaLock } from "react-icons/fa";
-import { AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
+import { motion, AnimatePresence } from "framer-motion";
+import { FaEnvelope, FaLock, FaCheck, FaTimes } from "react-icons/fa";
+import { AiFillEye, AiFillEyeInvisible, AiOutlineClose } from "react-icons/ai";
 
 const LoginPage = () => {
   const [credentials, setCredentials] = useState({ email: "", password: "" });
@@ -15,12 +16,11 @@ const LoginPage = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [userRole, setUserRole] = useState("");
 
-  const { setUser } = useAuth(); // ✅ Get context setter
+  const { setUser } = useAuth(); // from context
   const navigate = useNavigate();
 
   const handleChange = (e) => {
     setCredentials({ ...credentials, [e.target.name]: e.target.value });
-    // Clear error when user types
     if (errorMessage) setErrorMessage("");
   };
 
@@ -30,62 +30,26 @@ const LoginPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrorMessage("");
-
     setIsSubmitting(true);
+    setErrorMessage("");
 
     try {
       const response = await api.post("/api/users/login", credentials);
       const loggedUser = response.data;
 
-      // ✅ Save session
+      // Save session
       localStorage.setItem("user", JSON.stringify(loggedUser));
       setUser(loggedUser);
 
-      alert("Login successful!");
-
-      // ✅ Redirect by role
-      const userRole = loggedUser.role;
-      switch (userRole) {
-        case "SUPERADMIN":
-          navigate("/superadmin/dashboard");
-          break;
-        case "admin":
-          navigate("/admin-dashboard");
-          break;
-        case "user-manager":
-          navigate("/user-manager");
-          break;
-        case "assignment manager":
-          navigate("/assignmentdashboard");
-          break;
-        case "course manager":
-          navigate("/eventcourse");
-          break;
-        case "student":
-          navigate("/student/dashboard");
-          break;
-        case "lecturer":
-          navigate("/lecturer/dashboard");
-          break;
-        default:
-          navigate("/dashboard");
-      }
+      const role = loggedUser.role || "user";
+      setUserRole(role);
+      setShowSuccess(true);
     } catch (error) {
       console.error("Login error:", error);
       setErrorMessage(
-        error.response?.data || "Invalid email or password. Please try again."
+        error.response?.data?.message ||
+          "Invalid email or password. Please try again."
       );
-      const response = await api.post("/api/users/login", credentials);
-      console.log("User logged in:", response.data);
-
-      // Store user data
-      localStorage.setItem("user", JSON.stringify(response.data));
-
-      // Determine user role
-      const role = response.data.role || "user";
-      setUserRole(role);
-      setShowSuccess(true);
     } finally {
       setIsSubmitting(false);
     }
@@ -93,23 +57,26 @@ const LoginPage = () => {
 
   const redirectUser = () => {
     switch (userRole.toLowerCase()) {
+      case "superadmin":
+        navigate("/superadmin/dashboard");
+        break;
       case "admin":
         navigate("/admin-dashboard");
         break;
       case "user manager":
         navigate("/user-manager");
         break;
-      case "student":
-        navigate("/student");
-        break;
       case "assignment manager":
         navigate("/assignmentdashboard");
         break;
       case "course manager":
-        navigate("/course-manager");
+        navigate("/eventcourse");
+        break;
+      case "student":
+        navigate("/student/dashboard");
         break;
       case "lecturer":
-        navigate("/lecturer");
+        navigate("/lecturer/dashboard");
         break;
       default:
         navigate("/dashboard");
@@ -117,8 +84,8 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r ">
-      {/* Success Popup */}
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r">
+      {/* ✅ Success Popup */}
       <AnimatePresence>
         {showSuccess && (
           <motion.div
@@ -192,9 +159,9 @@ const LoginPage = () => {
         )}
       </AnimatePresence>
 
-      {/* Login Form */}
+      {/* ✅ Login Form UI */}
       <div className="flex bg-white rounded-xl shadow-2xl overflow-hidden max-w-4xl w-full">
-        {/* Left side - Form */}
+        {/* Left: Form */}
         <div className="w-full md:w-1/2 p-8">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -220,7 +187,7 @@ const LoginPage = () => {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Email Field */}
+              {/* Email */}
               <div className="relative">
                 <FaEnvelope className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <input
@@ -238,7 +205,7 @@ const LoginPage = () => {
                 />
               </div>
 
-              {/* Password Field */}
+              {/* Password */}
               <div className="relative">
                 <FaLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <input
@@ -267,7 +234,7 @@ const LoginPage = () => {
                 </button>
               </div>
 
-              {/* Forgot Password Link */}
+              {/* Forgot Password */}
               <div className="flex justify-end">
                 <a
                   href="/forgot-password"
@@ -316,7 +283,7 @@ const LoginPage = () => {
             </form>
 
             <div className="mt-6 text-center text-gray-600">
-              Don&apos;t have an account?{" "}
+              Don’t have an account?{" "}
               <a
                 href="/register"
                 className="text-blue-600 hover:underline font-medium"
@@ -327,7 +294,7 @@ const LoginPage = () => {
           </motion.div>
         </div>
 
-        {/* Image */}
+        {/* Right: Image */}
         <div className="hidden md:block w-1/2 relative">
           <img
             src={loginImage}

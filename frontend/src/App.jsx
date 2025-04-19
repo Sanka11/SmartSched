@@ -1,12 +1,11 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
-import LoginPage from "./pages/LoginPage";  // Create LoginPage later
+import LoginPage from "./pages/LoginPage"; // Create LoginPage later
 import AssignmentDashboard from "./pages/AssignmentDashboard"; // Create AssignmentDashboard later
 import AssignInstructor from "./pages/AssignInstructor"; // Create AssignInstructor later
 import EnrollStudents from "./pages/EnrollStudents";
 
-import CourseListPage from "./pages/CourseList";  //create CourseListPage
 import CourseFormPage from "./pages/CourseForm"; // create CourseFormPage
 
 import RegisterPage from "./pages/RegisterPage"; // Create RegisterPage later
@@ -43,9 +42,6 @@ import StudentCustomSchedule from "./pages/StudentCustomSchedule";
 import LecturerCustomSchedule from "./pages/LecturerCustomSchedule";
 import SuperadminDashboard from "./pages/superadmin/SuperadminDashboard";
 import GenerateTimetable from "./pages/superadmin/schedule/GenerateTimetable";
-
-
-
 
 function App() {
   return (
@@ -88,7 +84,10 @@ function App() {
       <Route path="/view-event/:eventId" element={<EventDetails />} />
       <Route path="/update-event/:eventId" element={<EventForm />} />
       <Route path="/AllCourseAndModules" element={<AllCourseAndModules />} />
-      <Route path="/generate-reports-assign" element={<GenerateReportAssignManager />} />
+      <Route
+        path="/generate-reports-assign"
+        element={<GenerateReportAssignManager />}
+      />
       <Route path="/ai-scheduler" element={<AIscheduler />} /> {/*AI Sceduler*/}
       <Route path="/my-timetable" element={<UserTimetable />} />
       <Route path="/student/timetable" element={<StudentTimetable />} />
@@ -97,11 +96,19 @@ function App() {
       <Route path="/lecturer/dashboard" element={<LecturerDashboard />} />
       <Route path="/lecturer" element={<LecturerDashboard />} />
       <Route path="/student" element={<StudentDashboard />} />
-      <Route path="/custom-schedule/student" element={<StudentCustomSchedule />} />
-      <Route path="/custom-schedule/lecturer" element={<LecturerCustomSchedule />} />
+      <Route
+        path="/custom-schedule/student"
+        element={<StudentCustomSchedule />}
+      />
+      <Route
+        path="/custom-schedule/lecturer"
+        element={<LecturerCustomSchedule />}
+      />
       <Route path="/superadmin/dashboard" element={<SuperadminDashboard />} />
-      <Route path="/superadmin/schedule/generate" element={<GenerateTimetable />} />
-
+      <Route
+        path="/superadmin/schedule/generate"
+        element={<GenerateTimetable />}
+      />
     </Routes>
   );
 }
