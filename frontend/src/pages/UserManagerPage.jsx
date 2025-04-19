@@ -9,14 +9,7 @@ import {
   FaSave, 
   FaTimes, 
   FaFilePdf,
-  FaUsers,
-  FaUserCog,
-  FaUserGraduate,
-  FaChalkboardTeacher,
-  FaTasks,
-  FaUserShield,
-  FaUserAlt,
-  FaBars
+  FaUserCog
 } from "react-icons/fa";
 import { Tab, Tabs, TabList, TabPanel } from "react-tabs";
 import "react-tabs/style/react-tabs.css";
@@ -24,6 +17,8 @@ import Sidebar from "../components/Sidebar";
 import MobileHeader from "../components/MobileHeader";
 import UserTable from "../components/UserTable";
 import FilterControls from "../components/FilterControls";
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const UserManagerPage = () => {
   const [users, setUsers] = useState([]);
@@ -50,7 +45,26 @@ const UserManagerPage = () => {
       setUsers(usersWithPermissions);
     } catch (error) {
       console.error("Error fetching users:", error);
-      alert("Failed to fetch users.");
+      toast.error(
+        <div className="flex items-center">
+          <FaTimes className="mr-2 text-red-500 text-xl" />
+          <div>
+            <p className="font-semibold">Fetch Failed!</p>
+            <p className="text-sm">Could not load users.</p>
+          </div>
+        </div>,
+        {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: 'bg-white border-l-4 border-red-500 shadow-lg',
+          bodyClassName: 'text-gray-800',
+        }
+      );
     }
   };
 
@@ -70,10 +84,48 @@ const UserManagerPage = () => {
       });
       fetchAllUsers();
       setEditingUserId(null);
-      alert("User updated successfully!");
+      toast.success(
+        <div className="flex items-center">
+          <FaUserCog className="mr-2 text-green-500 text-xl" />
+          <div>
+            <p className="font-semibold">User Updated!</p>
+            <p className="text-sm">Changes saved successfully.</p>
+          </div>
+        </div>,
+        {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: 'bg-white border-l-4 border-green-500 shadow-lg',
+          bodyClassName: 'text-gray-800',
+        }
+      );
     } catch (error) {
       console.error("Error updating user:", error);
-      alert("Failed to update user.");
+      toast.error(
+        <div className="flex items-center">
+          <FaTimes className="mr-2 text-red-500 text-xl" />
+          <div>
+            <p className="font-semibold">Update Failed!</p>
+            <p className="text-sm">Could not save changes.</p>
+          </div>
+        </div>,
+        {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: 'bg-white border-l-4 border-red-500 shadow-lg',
+          bodyClassName: 'text-gray-800',
+        }
+      );
     }
   };
 
@@ -85,10 +137,48 @@ const UserManagerPage = () => {
         },
       });
       fetchAllUsers();
-      alert("User deleted successfully!");
+      toast.success(
+        <div className="flex items-center">
+          <FaTrash className="mr-2 text-green-500 text-xl" />
+          <div>
+            <p className="font-semibold">User Deleted!</p>
+            <p className="text-sm">The user has been removed.</p>
+          </div>
+        </div>,
+        {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: 'bg-white border-l-4 border-green-500 shadow-lg',
+          bodyClassName: 'text-gray-800',
+        }
+      );
     } catch (error) {
       console.error("Error deleting user:", error);
-      alert("Failed to delete user.");
+      toast.error(
+        <div className="flex items-center">
+          <FaTimes className="mr-2 text-red-500 text-xl" />
+          <div>
+            <p className="font-semibold">Delete Failed!</p>
+            <p className="text-sm">Could not remove the user.</p>
+          </div>
+        </div>,
+        {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: 'bg-white border-l-4 border-red-500 shadow-lg',
+          bodyClassName: 'text-gray-800',
+        }
+      );
     }
   };
 
@@ -109,7 +199,26 @@ const UserManagerPage = () => {
     const filteredUsers = handleFilter();
 
     if (filteredUsers.length === 0) {
-      alert("No users found matching the filters.");
+      toast.warning(
+        <div className="flex items-center">
+          <FaFilePdf className="mr-2 text-yellow-500 text-xl" />
+          <div>
+            <p className="font-semibold">No Users Found!</p>
+            <p className="text-sm">No users matching the filters.</p>
+          </div>
+        </div>,
+        {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: 'bg-white border-l-4 border-yellow-500 shadow-lg',
+          bodyClassName: 'text-gray-800',
+        }
+      );
       return;
     }
 
@@ -168,36 +277,38 @@ const UserManagerPage = () => {
 
   return (
     <div className="flex h-screen bg-gray-100">
-      <Sidebar
-        sidebarOpen={sidebarOpen}
-        mobileSidebarOpen={mobileSidebarOpen}
-        activeTab={activeTab}
-        toggleSidebar={toggleSidebar}
-        toggleMobileSidebar={toggleMobileSidebar}
-        setActiveTab={setActiveTab}
-        setMobileSidebarOpen={setMobileSidebarOpen}
-      />
+      {/* Sidebar */}
+      <div className={`fixed inset-y-0 left-0 transform ${sidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full'} bg-white shadow-lg z-30 transition-all duration-300 ease-in-out`}>
+        <Sidebar
+          sidebarOpen={sidebarOpen}
+          mobileSidebarOpen={mobileSidebarOpen}
+          activeTab={activeTab}
+          toggleSidebar={toggleSidebar}
+          toggleMobileSidebar={toggleMobileSidebar}
+          setActiveTab={setActiveTab}
+          setMobileSidebarOpen={setMobileSidebarOpen}
+        />
+      </div>
 
-      <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${sidebarOpen ? "lg:ml-64" : "lg:ml-20"}`}>
+      {/* Main Content */}
+      <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-0'}`}>
         <MobileHeader toggleMobileSidebar={toggleMobileSidebar} />
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-8 bg-gradient-to-br from-gray-50 to-gray-100">
+        <main className="flex-1 overflow-y-auto p-6 bg-white">
           <div className="max-w-7xl mx-auto">
-            <div className="hidden lg:flex items-center justify-between mb-8">
-              <h1 className="text-3xl font-bold text-gray-800">User Management</h1>
-            </div>
+            <h1 className="text-2xl font-bold text-gray-800 mb-6">User Management</h1>
             
             <Tabs 
               selectedIndex={["admin", "lecturer", "student", "course manager", "assignment manager", "user manager", "user"].indexOf(activeTab)} 
               onSelect={(index) => setActiveTab(["admin", "lecturer", "student", "course manager", "assignment manager", "user manager", "user"][index])}
             >
-              <TabList className="hidden lg:flex space-x-2 mb-8 p-1 bg-gray-100 rounded-xl">
+              <TabList className="flex space-x-1 mb-6 p-1 bg-gray-100 rounded-md">
                 {["admin", "lecturer", "student", "course manager", "assignment manager", "user manager", "user"].map((role) => (
                   <Tab
                     key={role}
-                    className={`px-4 py-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                    className={`px-3 py-2 text-sm rounded-md cursor-pointer transition-all ${
                       activeTab === role 
-                        ? "bg-white text-indigo-600 shadow-md font-medium" 
+                        ? "bg-white text-indigo-600 shadow font-medium" 
                         : "text-gray-600 hover:text-indigo-500 hover:bg-gray-50"
                     }`}
                   >
@@ -206,13 +317,15 @@ const UserManagerPage = () => {
                 ))}
               </TabList>
 
-              <FilterControls
-                filterDate={filterDate}
-                filterRole={filterRole}
-                setFilterDate={setFilterDate}
-                setFilterRole={setFilterRole}
-                generatePDF={generatePDF}
-              />
+              <div className="mb-6">
+                <FilterControls
+                  filterDate={filterDate}
+                  filterRole={filterRole}
+                  setFilterDate={setFilterDate}
+                  setFilterRole={setFilterRole}
+                  generatePDF={generatePDF}
+                />
+              </div>
 
               {["admin", "lecturer", "student", "course manager", "assignment manager", "user manager", "user"].map((role) => (
                 <TabPanel key={role}>
@@ -223,6 +336,19 @@ const UserManagerPage = () => {
           </div>
         </main>
       </div>
+
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        toastClassName={() => "relative flex p-4 min-h-10 rounded-md justify-between overflow-hidden cursor-pointer bg-white shadow-lg my-2"}
+      />
     </div>
   );
 };
