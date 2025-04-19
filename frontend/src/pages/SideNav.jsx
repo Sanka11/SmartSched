@@ -1,4 +1,3 @@
-import { useNavigate } from "react-router-dom";
 import {
   UserGroupIcon,
   PresentationChartBarIcon,
@@ -6,79 +5,184 @@ import {
   HomeIcon,
   AcademicCapIcon,
   ArrowLeftOnRectangleIcon,
+  Bars3Icon,
+  XMarkIcon,
+  UserCircleIcon,
+  UserPlusIcon,
+  MapPinIcon, // Added for the locations icon
 } from "@heroicons/react/24/outline";
+import { useNavigate } from "react-router-dom";
 
-const SideNav = () => {
+const SideNav = ({ sidebarOpen, toggleSidebar, mobileSidebarOpen, toggleMobileSidebar }) => {
   const navigate = useNavigate();
 
+  // Get current user data
+  const currentUser = JSON.parse(localStorage.getItem("user")) || {
+    name: "Admin User",
+    email: "admin@example.com",
+    role: "admin"
+  };
+
   const handleLogout = () => {
-    // Add your logout logic here
-    console.log("User logged out");
-    navigate("/login"); // Redirect to login page after logout
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/login");
+  };
+
+  const handleProfileClick = () => {
+    toggleMobileSidebar(false);
+    navigate("/user-profile");
   };
 
   return (
-    <div className="w-64 min-h-screen bg-gradient-to-br from-blue-50 to-purple-100 p-6 shadow-lg flex flex-col justify-between">
-      <div className="flex flex-col space-y-6">
-        {/* Logo or Branding */}
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-800">
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
-              Academic
-            </span>
-          </h1>
-          <p className="text-sm text-gray-600">Management System</p>
-        </div>
+    <>
+      {/* Mobile sidebar backdrop */}
+      {mobileSidebarOpen && (
+        <div 
+          className="fixed inset-0 z-20 bg-black bg-opacity-50 lg:hidden"
+          onClick={() => toggleMobileSidebar(false)}
+          data-testid="sidebar-backdrop"
+        />
+      )}
 
-        {/* Navigation Links */}
-        <nav className="space-y-3">
-          <div
-            onClick={() => navigate("/assignmentdashboard")}
-            className="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-100 cursor-pointer transition-colors"
+      {/* Sidebar */}
+      <aside 
+        className={`fixed top-0 left-0 z-30 h-screen w-64 bg-gradient-to-b from-indigo-700 to-blue-800 text-white transition-all duration-300 ease-in-out 
+          ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0 lg:w-20"} 
+          ${mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
+        aria-label="Admin sidebar"
+      >
+        <div className="flex items-center justify-between p-4 border-b border-blue-700">
+          {sidebarOpen && (
+            <h1 className="text-xl font-bold">Academic System</h1>
+          )}
+          <button 
+            onClick={toggleSidebar}
+            className="hidden lg:block text-white hover:text-blue-200"
+            aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
           >
-            <HomeIcon className="w-6 h-6 text-blue-600" />
-            <span className="text-gray-800 font-medium">Home</span>
+            {sidebarOpen ? <XMarkIcon className="w-5 h-5" /> : <Bars3Icon className="w-5 h-5" />}
+          </button>
+          <button 
+            onClick={() => toggleMobileSidebar(false)}
+            className="lg:hidden text-white hover:text-blue-200"
+            aria-label="Close sidebar"
+          >
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
+        
+        <nav className="p-4 flex flex-col h-[calc(100%-64px)]">
+          {/* User Profile Section */}
+          <div 
+            onClick={handleProfileClick}
+            className={`flex items-center p-3 mb-4 rounded-lg cursor-pointer hover:bg-blue-700 transition-colors ${!sidebarOpen ? "justify-center" : ""}`}
+          >
+            <div className="relative">
+              <UserCircleIcon className="w-8 h-8 text-blue-200" />
+              {currentUser.role === "admin" && (
+                <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-blue-800"></span>
+              )}
+            </div>
+            {sidebarOpen && (
+              <div className="ml-3 overflow-hidden">
+                <p className="text-sm font-medium truncate">{currentUser.name}</p>
+                <p className="text-xs text-blue-200 truncate">{currentUser.email}</p>
+              </div>
+            )}
           </div>
-          <div
-            onClick={() => navigate("/enroll-students")}
-            className="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-100 cursor-pointer transition-colors"
-          >
-            <UserGroupIcon className="w-6 h-6 text-blue-600" />
-            <span className="text-gray-800 font-medium">Enroll Students</span>
+
+          {/* Navigation Links */}
+          <div className="flex-1 overflow-y-auto">
+            <ul className="space-y-2">
+              <li>
+                <div 
+                  onClick={() => {
+                    navigate("/assignmentdashboard");
+                    toggleMobileSidebar(false);
+                  }}
+                  className={`flex items-center p-2 rounded-lg hover:bg-blue-700 cursor-pointer ${!sidebarOpen ? "justify-center" : ""}`}
+                >
+                  <HomeIcon className="w-5 h-5" />
+                  {sidebarOpen && <span className="ml-3">Dashboard</span>}
+                </div>
+              </li>
+              <li>
+                <div 
+                  onClick={() => {
+                    navigate("/enroll-students");
+                    toggleMobileSidebar(false);
+                  }}
+                  className={`flex items-center p-2 rounded-lg hover:bg-blue-700 cursor-pointer ${!sidebarOpen ? "justify-center" : ""}`}
+                >
+                  <UserPlusIcon className="w-5 h-5" />
+                  {sidebarOpen && <span className="ml-3">Enroll Students</span>}
+                </div>
+              </li>
+              <li>
+                <div 
+                  onClick={() => {
+                    navigate("/assign-instructors");
+                    toggleMobileSidebar(false);
+                  }}
+                  className={`flex items-center p-2 rounded-lg hover:bg-blue-700 cursor-pointer ${!sidebarOpen ? "justify-center" : ""}`}
+                >
+                  <PresentationChartBarIcon className="w-5 h-5" />
+                  {sidebarOpen && <span className="ml-3">Assign Instructors</span>}
+                </div>
+              </li>
+              <li>
+                <div 
+                  onClick={() => {
+                    navigate("/assign-classes");
+                    toggleMobileSidebar(false);
+                  }}
+                  className={`flex items-center p-2 rounded-lg hover:bg-blue-700 cursor-pointer ${!sidebarOpen ? "justify-center" : ""}`}
+                >
+                  <AcademicCapIcon className="w-5 h-5" />
+                  {sidebarOpen && <span className="ml-3">Assign Classes</span>}
+                </div>
+              </li>
+              <li>
+                <div 
+                  onClick={() => {
+                    navigate("/locations"); // Added locations navigation
+                    toggleMobileSidebar(false);
+                  }}
+                  className={`flex items-center p-2 rounded-lg hover:bg-blue-700 cursor-pointer ${!sidebarOpen ? "justify-center" : ""}`}
+                >
+                  <MapPinIcon className="w-5 h-5" /> {/* Added MapPinIcon */}
+                  {sidebarOpen && <span className="ml-3">Locations</span>}
+                </div>
+              </li>
+              <li>
+                <div 
+                  onClick={() => {
+                    navigate("/generate-reports-assign");
+                    toggleMobileSidebar(false);
+                  }}
+                  className={`flex items-center p-2 rounded-lg hover:bg-blue-700 cursor-pointer ${!sidebarOpen ? "justify-center" : ""}`}
+                >
+                  <ChartBarIcon className="w-5 h-5" />
+                  {sidebarOpen && <span className="ml-3">Generate Reports</span>}
+                </div>
+              </li>
+            </ul>
           </div>
-          <div
-            onClick={() => navigate("/assign-instructors")}
-            className="flex items-center space-x-3 p-3 rounded-lg hover:bg-green-100 cursor-pointer transition-colors"
-          >
-            <PresentationChartBarIcon className="w-6 h-6 text-green-600" />
-            <span className="text-gray-800 font-medium">Assign Instructors</span>
-          </div>
-          <div
-            onClick={() => navigate("/assign-classes")}
-            className="flex items-center space-x-3 p-3 rounded-lg hover:bg-yellow-100 cursor-pointer transition-colors"
-          >
-            <AcademicCapIcon className="w-6 h-6 text-yellow-600" />
-            <span className="text-gray-800 font-medium">Assign Classes</span>
-          </div>
-          <div
-            onClick={() => navigate("/generate-reports-assign")}
-            className="flex items-center space-x-3 p-3 rounded-lg hover:bg-purple-100 cursor-pointer transition-colors"
-          >
-            <ChartBarIcon className="w-6 h-6 text-purple-600" />
-            <span className="text-gray-800 font-medium">Generate Reports</span>
+
+          {/* Logout Button */}
+          <div className="mt-auto pt-4 border-t border-blue-700">
+            <button
+              onClick={handleLogout}
+              className={`flex items-center w-full p-2 rounded-lg hover:bg-blue-700 transition-colors ${!sidebarOpen ? "justify-center" : ""}`}
+            >
+              <ArrowLeftOnRectangleIcon className="w-5 h-5" />
+              {sidebarOpen && <span className="ml-3">Logout</span>}
+            </button>
           </div>
         </nav>
-      </div>
-
-      {/* Logout Button */}
-      <div
-        onClick={handleLogout}
-        className="flex items-center space-x-3 p-3 rounded-lg hover:bg-red-100 cursor-pointer transition-colors"
-      >
-        <ArrowLeftOnRectangleIcon className="w-6 h-6 text-red-600" />
-        <span className="text-gray-800 font-medium">Logout</span>
-      </div>
-    </div>
+      </aside>
+    </>
   );
 };
 

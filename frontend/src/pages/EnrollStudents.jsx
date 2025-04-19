@@ -9,7 +9,8 @@ import {
   UserCircleIcon,
   AcademicCapIcon,
   BookOpenIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  Bars3Icon
 } from "@heroicons/react/24/outline";
 import SideNav from "./SideNav";
 
@@ -29,6 +30,8 @@ const StudentEnrollment = () => {
     callback: null,
   });
   const [isSearchActive, setIsSearchActive] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   // Fetch users and students from the backend API
   useEffect(() => {
@@ -326,7 +329,9 @@ const StudentEnrollment = () => {
   };
 
   // Handle module removal with confirmation
-  const handleRemoveModule = async (courseName, moduleName) => {
+  const handleRemoveModule = async (data) => {
+    const { courseName, moduleName } = data;
+    
     if (!moduleName) {
       toast.warning("Module name is required.");
       return;
@@ -336,11 +341,14 @@ const StudentEnrollment = () => {
       const response = await axios.delete(
         `http://localhost:8080/api/student-enrollments/${selectedUser.id}/courses/${encodeURIComponent(courseName)}/modules/${encodeURIComponent(moduleName)}`
       );
+      
+      // Create updated student object
       const updatedStudent = {
-        ...response.data,
-        fullName: response.data.firstName + ' ' + response.data.lastName,
-        courseClasses: response.data.courseClasses || { ...selectedUser.courseClasses },
-        courseModules: response.data.courseModules || { ...selectedUser.courseModules }
+        ...selectedUser,
+        courseModules: {
+          ...selectedUser.courseModules,
+          [courseName]: selectedUser.courseModules[courseName].filter(mod => mod !== moduleName)
+        }
       };
       
       setSelectedUser(updatedStudent);
@@ -352,58 +360,80 @@ const StudentEnrollment = () => {
     }
   };
 
-  if (loading) return <div className="p-6 text-gray-700">Loading...</div>;
-  if (error) return <div className="p-6 text-red-500">Error: {error}</div>;
+  if (loading) {
+    return (
+      <div className="flex min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
+        <SideNav 
+          sidebarOpen={sidebarOpen}
+          toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+          mobileSidebarOpen={mobileSidebarOpen}
+          toggleMobileSidebar={setMobileSidebarOpen}
+        />
+        <div className={`flex-1 flex items-center justify-center ${sidebarOpen ? "lg:ml-64" : "lg:ml-20"}`}>
+          <div className="text-center py-8">Loading...</div>
+        </div>
+      </div>
+    );
+  }
 
-  // Determine which users to display
-  const displayedUsers = isSearchActive ? filteredUsers : filteredUsers.slice(0, 6);
+  if (error) {
+    return (
+      <div className="flex min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
+        <SideNav 
+          sidebarOpen={sidebarOpen}
+          toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+          mobileSidebarOpen={mobileSidebarOpen}
+          toggleMobileSidebar={setMobileSidebarOpen}
+        />
+        <div className={`flex-1 flex items-center justify-center ${sidebarOpen ? "lg:ml-64" : "lg:ml-20"}`}>
+          <div className="text-center py-8 text-red-500">Error: {error}</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Determine which users to display - hide others when a student is selected
+  const displayedUsers = selectedUser 
+    ? [] 
+    : isSearchActive 
+      ? filteredUsers 
+      : filteredUsers.slice(0, 6);
 
   return (
-    <div className="flex bg-gradient-to-br from-blue-50 to-purple-50 min-h-screen">
-      <SideNav />
-      <div className="p-8 w-full">
-        <ToastContainer position="top-right" autoClose={3000} />
+    <div className="flex min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
+      <SideNav 
+        sidebarOpen={sidebarOpen}
+        toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+        mobileSidebarOpen={mobileSidebarOpen}
+        toggleMobileSidebar={setMobileSidebarOpen}
+      />
 
-        {/* Confirmation Modal */}
-        {deleteConfirmation.show && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[1000]">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-xl">
-              <div className="text-center">
-                <ExclamationTriangleIcon className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
-                <h3 className="text-2xl font-bold text-gray-800 mb-2">
-                  Confirm Deletion
-                </h3>
-                <p className="text-gray-600 mb-6">
-                  {deleteConfirmation.type === "module"
-                    ? `Are you sure you want to delete the "${deleteConfirmation.data.moduleName}" module?`
-                    : `Are you sure you want to delete the course "${deleteConfirmation.data}"?`}
-                </p>
-                <div className="flex justify-center gap-4">
-                  <button
-                    onClick={hideConfirmation}
-                    className="px-6 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => {
-                      deleteConfirmation.callback(deleteConfirmation.data);
-                      hideConfirmation();
-                    }}
-                    className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center gap-2"
-                  >
-                    <XCircleIcon className="w-5 h-5" />
-                    Confirm Delete
-                  </button>
-                </div>
-              </div>
+      <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? "lg:ml-64" : "lg:ml-20"}`}>
+        <div className="p-4 lg:p-8 w-full">
+          <ToastContainer position="top-right" autoClose={3000} />
+
+          {/* Mobile header with toggle button */}
+          <div className="lg:hidden flex items-center mb-6">
+            <button
+              onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+              className="mr-4 p-2 rounded-lg bg-blue-100 text-blue-600"
+            >
+              {mobileSidebarOpen ? (
+                <XMarkIcon className="w-5 h-5" />
+              ) : (
+                <Bars3Icon className="w-5 h-5" />
+              )}
+            </button>
+            <div className="flex items-center gap-3">
+              <AcademicCapIcon className="h-8 w-8 text-blue-600" />
+              <h1 className="text-xl font-bold text-gray-800">
+                Student Enrollment
+              </h1>
             </div>
           </div>
-        )}
 
-        <div className="max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="mb-8">
+          {/* Desktop header */}
+          <div className="hidden lg:block mb-8">
             <h1 className="text-4xl font-bold text-gray-800 mb-2">
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
                 Student Enrollment Management
@@ -412,53 +442,88 @@ const StudentEnrollment = () => {
             <p className="text-gray-600 text-lg">Enroll courses, modules, and classes to students</p>
           </div>
 
-          {/* Search Bar */}
-          <div className="mb-8 relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
-            </div>
-            <input
-              type="text"
-              placeholder="Search students..."
-              value={searchQuery}
-              onChange={handleSearchChange}
-              className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/50 backdrop-blur-sm"
-            />
-          </div>
-
-          {/* Student Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {displayedUsers.map((user) => (
-              <div
-                key={user._id || user.email}
-                onClick={() => handleUserSelect(user)}
-                className={`group p-6 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer border-2 ${
-                  selectedUser?._id === user._id
-                    ? "border-blue-500"
-                    : selectedUser
-                    ? "hidden"
-                    : "border-transparent hover:border-blue-200"
-                }`}
-              >
-                <div className="flex items-start gap-4">
-                  <div className="p-3 bg-blue-100 rounded-xl">
-                    <UserCircleIcon className="w-8 h-8 text-blue-600" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
-                      {user.fullName}
-                    </h2>
-                    <p className="text-gray-500 text-sm">{user.email}</p>
-                    {students.some(student => student.email === user.email) && (
-                      <span className="inline-block mt-1 px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
-                        Enrolled
-                      </span>
-                    )}
+          {/* Confirmation Modal */}
+          {deleteConfirmation.show && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[1000]">
+              <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-xl">
+                <div className="text-center">
+                  <ExclamationTriangleIcon className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
+                  <h3 className="text-2xl font-bold text-gray-800 mb-2">
+                    Confirm Deletion
+                  </h3>
+                  <p className="text-gray-600 mb-6">
+                    {deleteConfirmation.type === "module"
+                      ? `Are you sure you want to delete the "${deleteConfirmation.data.moduleName}" module?`
+                      : `Are you sure you want to delete the course "${deleteConfirmation.data}"?`}
+                  </p>
+                  <div className="flex justify-center gap-4">
+                    <button
+                      onClick={hideConfirmation}
+                      className="px-6 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        deleteConfirmation.callback(deleteConfirmation.data);
+                        hideConfirmation();
+                      }}
+                      className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center gap-2"
+                    >
+                      <XCircleIcon className="w-5 h-5" />
+                      Confirm Delete
+                    </button>
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          )}
+
+          {/* Search Bar - Only show when no student is selected */}
+          {!selectedUser && (
+            <div className="mb-8 relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search students..."
+                value={searchQuery}
+                onChange={handleSearchChange}
+                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/50 backdrop-blur-sm"
+              />
+            </div>
+          )}
+
+          {/* Student Cards - Only show when no student is selected */}
+          {!selectedUser && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              {displayedUsers.map((user) => (
+                <div
+                  key={user._id || user.email}
+                  onClick={() => handleUserSelect(user)}
+                  className={`group p-6 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer border-2 border-transparent hover:border-blue-200`}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 bg-blue-100 rounded-xl">
+                      <UserCircleIcon className="w-8 h-8 text-blue-600" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
+                        {user.fullName}
+                      </h2>
+                      <p className="text-gray-500 text-sm">{user.email}</p>
+                      {students.some(student => student.email === user.email) && (
+                        <span className="inline-block mt-1 px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                          Enrolled
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Selected Student Details */}
           {selectedUser && (
@@ -549,7 +614,10 @@ const StudentEnrollment = () => {
                             >
                               <span className="text-gray-700">{moduleName}</span>
                               <button
-                                onClick={() => showConfirmation("module", { courseName, moduleName }, handleRemoveModule)}
+                                onClick={() => showConfirmation("module", { 
+                                  courseName: courseName, 
+                                  moduleName: moduleName 
+                                }, handleRemoveModule)}
                                 className="px-3 py-1 text-sm bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors flex items-center gap-1"
                               >
                                 <XCircleIcon className="w-4 h-4" />

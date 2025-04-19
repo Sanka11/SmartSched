@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { FiEdit, FiTrash2, FiPlus, FiX, FiChevronDown, FiChevronUp, FiMail, FiClock } from 'react-icons/fi';
+import jsPDF from "jspdf";
+import "jspdf-autotable";
+
 
 function AllCourseAndModules() {
   // State management
@@ -24,6 +27,35 @@ function AllCourseAndModules() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  const generateReport = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text("Course Report", 14, 22);
+  
+    const tableColumn = ["Course Name", "Course Fee", "Duration", "Contact Email"];
+    const tableRows = [];
+  
+    courses.forEach((course) => {
+      const rowData = [
+        course.name,
+        course.courseFee,
+        course.courseDuration,
+        course.contactEmail,
+      ];
+      tableRows.push(rowData);
+    });
+  
+    doc.autoTable({
+      head: [tableColumn],
+      body: tableRows,
+      startY: 30,
+      styles: { fontSize: 10 },
+    });
+  
+    doc.save("Course_Report.pdf");
+  };
+  
 
   // Fetch courses function
   const fetchCourses = async () => {
@@ -209,20 +241,30 @@ function AllCourseAndModules() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+    <div className="min-h-screen bg-gray-900 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800">Course Management</h1>
+            <h1 className="text-3xl font-bold text-blue-800">Course Management</h1>
             <p className="text-gray-600 mt-1">Manage all courses, modules, and groups</p>
           </div>
           <button
             onClick={() => { resetForm(); setIsFormOpen(true); }}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md"
+            className="flex items-center px-6 py-3 bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-medium rounded-xl shadow-lg hover:shadow-xl hover:from-purple-600 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 group"
           >
             <FiPlus /> Add New Course
           </button>
+          <button onClick={generateReport}
+          className="flex items-center px-6 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white font-medium rounded-xl shadow-lg hover:shadow-xl hover:from-orange-600 hover:to-red-700 transition-all duration-300 transform hover:scale-105 group"
+
+>
+          <FiPlus className="mr-2 group-hover:rotate-90 transition-transform duration-300" />
+           <span className="group-hover:translate-x-1 transition-transform duration-300">
+              Generate Report
+           </span>
+          </button>
+
         </div>
 
         {/* Error Display */}
