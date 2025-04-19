@@ -18,7 +18,7 @@
     "axios": "^1.8.4",
     "bcryptjs": "^3.0.2",
     "crypto-js": "^4.2.0",
-    "framer-motion": "^12.5.0",
+    "framer-motion": "^12.7.4",
     "jspdf": "^2.5.2",
     "jspdf-autotable": "^3.8.4",
     "react": "^19.0.0",

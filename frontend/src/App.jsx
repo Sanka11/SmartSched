@@ -20,9 +20,13 @@ import EventDetails from "./pages/EventDetails";
 import AddUser from "./pages/AddUser";
 import UserProfile from "./pages/UserProfile";
 import CreateEventCourse from "./pages/CreateEventCourse";
+import UpdatePassword from "./pages/UpdatePassword";
 
 import AllCourseAndModules from "./pages/AllCourseAndModules";
 import Viewcourse from "./pages/viewcourse";
+import LocationManager from "./pages/LocationManager";
+import StudentCourses from "./pages/StudentCourses";
+import InstructorCourses from "./pages/InstructorCourses";
 
 
 function App() {
@@ -46,6 +50,7 @@ function App() {
       <Route path="/view-event/:eventId" element={<EventDetails />} />
       <Route path="/update-event/:eventId" element={<EventForm />} />{" "}
       <Route path="/eventcourse" element={<CreateEventCourse />} />
+      <Route path="/forgot-password" element={<UpdatePassword />} />
       
 
       <Route path="/generate-reports-assign" element={<GenerateReportAssignManager/>} />
@@ -61,7 +66,6 @@ function App() {
       <Route path="/view-event/:eventId" element={<EventDetails />} />
       <Route path="/update-event/:eventId" element={<EventForm />} />
       <Route path="/AllCourseAndModules" element={<AllCourseAndModules />} />
-      <Route path="/viewcourse" element={<Viewcourse />} />
       
     </Routes>
   );

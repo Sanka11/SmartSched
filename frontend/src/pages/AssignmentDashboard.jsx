@@ -4,7 +4,8 @@ import {
   PresentationChartBarIcon,
   ChartBarIcon,
   AcademicCapIcon,
-  ClockIcon, // Import the new icon for Timetables
+  ClockIcon,
+  BuildingOfficeIcon, // Added for Hall Management
 } from "@heroicons/react/24/outline";
 
 const AssignmentDashboard = () => {
@@ -12,7 +13,7 @@ const AssignmentDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-100 p-8">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto"> {/* Increased max-width to accommodate more cards */}
         {/* Header Section */}
         <div className="text-center mb-12">
           <h1 className="text-5xl font-bold text-gray-800 mb-4">
@@ -93,6 +94,31 @@ const AssignmentDashboard = () => {
               </p>
               <button className="flex items-center text-yellow-600 font-semibold group-hover:text-yellow-700 transition-colors">
                 <span>Assign Classes</span>
+                <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* Hall Management Card */}
+          <div
+            onClick={() => navigate("/locations")} // Assuming this is your hall management route
+            className="group relative bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-teal-50 to-emerald-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"></div>
+            <div className="relative">
+              <div className="mb-6">
+                <div className="w-16 h-16 bg-teal-100 rounded-xl flex items-center justify-center">
+                  <BuildingOfficeIcon className="w-8 h-8 text-teal-600" />
+                </div>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-3">Hall Management</h2>
+              <p className="text-gray-600 mb-6">
+                Manage lecture halls, classrooms, and facility allocations
+              </p>
+              <button className="flex items-center text-teal-600 font-semibold group-hover:text-teal-700 transition-colors">
+                <span>Manage Halls</span>
                 <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
                 </svg>

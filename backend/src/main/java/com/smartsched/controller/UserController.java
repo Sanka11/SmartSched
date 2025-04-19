@@ -98,7 +98,10 @@ public class UserController {
 
 
     @PutMapping("/forgot-password")
-    public ResponseEntity<String> updatePassword(@RequestParam String email, @RequestParam String newPassword) {
+    public ResponseEntity<String> updatePassword(@RequestBody Map<String, String> requestBody) {
+        String email = requestBody.get("email");
+        String newPassword = requestBody.get("newPassword");
+    
         boolean isUpdated = userService.updatePassword(email, newPassword);
         if (isUpdated) {
             return ResponseEntity.ok("Password updated successfully");
@@ -106,6 +109,7 @@ public class UserController {
             return ResponseEntity.status(400).body("User not found or password update failed");
         }
     }
+    
 
 
     @PostMapping("/add")
