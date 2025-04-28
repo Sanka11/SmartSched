@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "../../../services/axios";
+import api from "../../../services/api"; // ✅ FIXED PATH
 import { toast } from "react-hot-toast";
 import { TailSpin } from "react-loader-spinner";
 
@@ -14,97 +14,113 @@ export default function GenerateTimetable() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await axios.get("/api/users"); // ✅ Correct endpoint
-        setUsers(response.data); // ✅ FIXED: match declared state
+        const response = await api.get("/api/users", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+        setUsers(response.data);
       } catch (error) {
         console.error("Failed to fetch users:", error);
+        toast.error("Failed to load users.");
       }
     };
-  
     fetchUsers();
   }, []);
-  
 
-  // Handle bulk selector
   useEffect(() => {
     if (bulkType === "all-students") {
-      const studentEmails = users.filter((u) => u.role === "student").map((u) => u.email);
-      setSelectedEmails(studentEmails);
+      setSelectedEmails(
+        users.filter((u) => u.role === "student").map((u) => u.email)
+      );
       setSelectedRole("student");
     } else if (bulkType === "all-lecturers") {
-      const lecturerEmails = users.filter((u) => u.role === "lecturer").map((u) => u.email);
-      setSelectedEmails(lecturerEmails);
+      setSelectedEmails(
+        users.filter((u) => u.role === "lecturer").map((u) => u.email)
+      );
       setSelectedRole("lecturer");
     } else if (bulkType === "all") {
-      const allEmails = users.map((u) => u.email);
-      setSelectedEmails(allEmails);
-      setSelectedRole(""); // mixed roles
+      setSelectedEmails(users.map((u) => u.email));
+      setSelectedRole("");
     } else {
       setSelectedEmails([]);
     }
   }, [bulkType, users]);
 
   const handleSelectChange = (e) => {
-    const options = Array.from(e.target.selectedOptions, (option) => option.value);
-    setSelectedEmails(options);
+    setSelectedEmails(Array.from(e.target.selectedOptions, (opt) => opt.value));
   };
 
   const handleGenerate = async () => {
-    if (selectedEmails.length === 0) {
-      toast.error("Please select at least one user.");
-      return;
-    }
-
+    if (selectedEmails.length === 0)
+      return toast.error("Please select at least one user.");
     try {
       setLoading(true);
-      const res = await axios.post("/api/schedule/generate/bulk", {
-        emails: selectedEmails,
-        role: selectedRole, // role can be empty for "all"
-      });
-
-      toast.success("Timetable(s) generated successfully!");
-      console.log("✅ Bulk generation response:", res.data);
+      const res = await api.post(
+        "/api/schedule/generate/bulk",
+        {
+          emails: selectedEmails,
+          role: selectedRole,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      toast.success("Timetables generated successfully!");
+      console.log("✅ Response:", res.data);
     } catch (err) {
-      console.error("❌ Error in bulk generation:", err);
-      toast.error(err.response?.data?.message || "Bulk generation failed.");
+      console.error("❌ Bulk generation error:", err);
+      toast.error(err.response?.data?.message || "Generation failed.");
     } finally {
       setLoading(false);
     }
   };
 
   const handleCheckConflicts = async () => {
-    if (selectedEmails.length === 0) {
-      toast.error("Select users first to preview conflicts.");
-      return;
-    }
-
+    if (selectedEmails.length === 0)
+      return toast.error("Select users to check conflicts.");
     try {
       setLoading(true);
-      const res = await axios.post("/api/schedule/conflicts", {
-        emails: selectedEmails,
-        role: selectedRole,
-      });
-
+      const res = await api.post(
+        "/api/schedule/conflicts",
+        {
+          emails: selectedEmails,
+          role: selectedRole,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
       setConflicts(res.data.conflicts || []);
-      if ((res.data.conflicts || []).length === 0) {
-        toast.success("✅ No conflicts detected.");
+      if (!res.data.conflicts || res.data.conflicts.length === 0) {
+        toast.success("✅ No conflicts found.");
       }
     } catch (err) {
-      console.error("Error checking conflicts:", err);
+      console.error("Conflict check error:", err);
       toast.error("Failed to fetch conflict report.");
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredUsers = users.filter((user) => user.role === selectedRole || bulkType === "all");
+  const filteredUsers = users.filter(
+    (user) => user.role === selectedRole || bulkType === "all"
+  );
 
   return (
     <div className="max-w-5xl mx-auto bg-white p-6 rounded-xl shadow-md mt-8">
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">Generate Timetables (with Bulk Options)</h1>
+      <h1 className="text-2xl font-bold text-gray-800 mb-6">
+        Generate Timetables (Bulk Options)
+      </h1>
 
       <div className="mb-4">
-        <label className="block text-gray-600 font-medium mb-1">Bulk Type (Optional)</label>
+        <label className="block text-gray-600 font-medium mb-1">
+          Bulk Type
+        </label>
         <select
           value={bulkType}
           onChange={(e) => setBulkType(e.target.value)}
@@ -118,12 +134,14 @@ export default function GenerateTimetable() {
       </div>
 
       <div className="mb-4">
-        <label className="block text-gray-600 font-medium mb-1">Manual Role Filter</label>
+        <label className="block text-gray-600 font-medium mb-1">
+          Manual Role Filter
+        </label>
         <select
           value={selectedRole}
           onChange={(e) => {
             setSelectedRole(e.target.value);
-            setBulkType(""); // Reset bulk
+            setBulkType("");
           }}
           className="w-full px-4 py-2 border rounded-md bg-gray-50 text-gray-700"
         >
@@ -133,7 +151,9 @@ export default function GenerateTimetable() {
       </div>
 
       <div className="mb-6">
-        <label className="block text-gray-600 font-medium mb-1">Select Users (Multi-select)</label>
+        <label className="block text-gray-600 font-medium mb-1">
+          Select Users (Multi-select)
+        </label>
         <select
           multiple
           value={selectedEmails}
@@ -175,15 +195,16 @@ export default function GenerateTimetable() {
 
       {conflicts.length > 0 && (
         <div className="mt-8 bg-red-50 p-4 rounded-md border border-red-200">
-          <h2 className="text-lg font-semibold text-red-700 mb-3">Detected Conflicts</h2>
+          <h2 className="text-lg font-semibold text-red-700 mb-3">
+            Detected Conflicts
+          </h2>
           <ul className="list-disc list-inside text-sm text-red-600">
-  {conflicts.map((c) => (
-    <li key={`${c.userEmail}-${c.issue}`}>
-      {c.userEmail} → {c.issue}
-    </li>
-  ))}
-</ul>
-
+            {conflicts.map((c) => (
+              <li key={`${c.userEmail}-${c.issue}`}>
+                {c.userEmail} → {c.issue}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </div>

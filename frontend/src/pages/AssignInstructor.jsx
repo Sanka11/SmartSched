@@ -7,12 +7,11 @@ import {
   XCircleIcon,
   ExclamationTriangleIcon,
   Bars3Icon,
-  XMarkIcon
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import SideNav from "./SideNav";
-
 
 const AssignInstructor = () => {
   // State variables
@@ -32,38 +31,60 @@ const AssignInstructor = () => {
   const [moduleToDelete, setModuleToDelete] = useState("");
   const [classToDelete, setClassToDelete] = useState("");
   const [deleteAction, setDeleteAction] = useState(""); // 'module' or 'class'
+  const [isLoading, setIsLoading] = useState(true);
 
   // Fetch users and instructors on component mount
   useEffect(() => {
-    // Fetch users (potential instructors)
-    fetch("http://localhost:8080/api/users")
-      .then((res) => res.json())
-      .then((data) => setUsers(data))
-      .catch((err) => {
-        console.error("Error fetching users:", err);
-        toast.error("Failed to fetch users");
-      });
+    const fetchData = async () => {
+      setIsLoading(true);
+      const token = localStorage.getItem("token");
+      const userRole = JSON.parse(localStorage.getItem("user"))?.role || "";
+      console.log("AssignInstructor useEffect running...");
+      console.log("Token value is:", token);
+      console.log("User role is:", userRole);
 
-    // Fetch existing instructors
-    fetch("http://localhost:8080/api/instructors")
-      .then((res) => res.json())
-      .then((data) => setInstructors(data))
-      .catch((err) => {
-        console.error("Error fetching instructors:", err);
-        toast.error("Failed to fetch instructors");
-      });
+      const headers = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      };
 
-    // Fetch courses with modules
-    fetch("http://localhost:8080/api/allcourses")
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("Courses Data:", data);
-        setCourses(data);
-      })
-      .catch((err) => {
-        console.error("Error fetching courses:", err);
-        toast.error("Failed to fetch courses");
-      });
+      try {
+        if (
+          [
+            "admin",
+            "superadmin",
+            "user manager",
+            "assignment manager",
+          ].includes(userRole)
+        ) {
+          const resUsers = await fetch("http://localhost:8080/api/users", {
+            headers,
+          });
+          if (resUsers.ok) setUsers(await resUsers.json());
+          else throw new Error("Failed to fetch users");
+        }
+
+        const resInstructors = await fetch(
+          "http://localhost:8080/api/instructors",
+          { headers }
+        );
+        if (resInstructors.ok) setInstructors(await resInstructors.json());
+        else throw new Error("Failed to fetch instructors");
+
+        const resCourses = await fetch("http://localhost:8080/api/allcourses", {
+          headers,
+        });
+        if (resCourses.ok) setCourses(await resCourses.json());
+        else throw new Error("Failed to fetch courses");
+      } catch (err) {
+        console.error(err);
+        toast.error(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
   // Filter users based on search query and role
@@ -80,22 +101,25 @@ const AssignInstructor = () => {
   };
 
   // Determine which users to display - hide others when an instructor is selected
-  const displayedUsers = selectedUser 
-    ? [] 
-    : isSearchActive 
-      ? filteredUsers 
-      : filteredUsers.slice(0, 6);
+  const displayedUsers = selectedUser
+    ? []
+    : isSearchActive
+    ? filteredUsers
+    : filteredUsers.slice(0, 6);
 
   // Handle user selection
   const handleUserSelect = (user) => {
     // Check if this user is already an instructor
-    const existingInstructor = instructors.find(instructor => instructor.email === user.email);
-    
+    const existingInstructor = instructors.find(
+      (instructor) => instructor.email === user.email
+    );
+
     if (existingInstructor) {
       // If they are an instructor, set them as selected
       setSelectedUser({
         ...existingInstructor,
-        fullName: existingInstructor.firstName + ' ' + existingInstructor.lastName
+        fullName:
+          existingInstructor.firstName + " " + existingInstructor.lastName,
       });
     } else {
       // If not, just set the basic user info
@@ -111,14 +135,16 @@ const AssignInstructor = () => {
     }
 
     // Check if the user is already an instructor
-    let instructor = instructors.find(instructor => instructor.email === selectedUser.email);
-    
+    let instructor = instructors.find(
+      (instructor) => instructor.email === selectedUser.email
+    );
+
     if (!instructor) {
       // If not, create a new instructor record
       try {
-        const nameParts = selectedUser.fullName.split(' ');
-        const firstName = nameParts[0] || '';
-        const lastName = nameParts.slice(1).join(' ') || '';
+        const nameParts = selectedUser.fullName.split(" ");
+        const firstName = nameParts[0] || "";
+        const lastName = nameParts.slice(1).join(" ") || "";
 
         const response = await fetch("http://localhost:8080/api/instructors", {
           method: "POST",
@@ -129,23 +155,22 @@ const AssignInstructor = () => {
             firstName: firstName,
             lastName: lastName,
             email: selectedUser.email,
-            modules: [moduleTitle]
-          })
+            modules: [moduleTitle],
+          }),
         });
-        
+
         if (!response.ok) throw new Error("Failed to create instructor");
-        
+
         const newInstructor = await response.json();
         const newInstructorWithFullName = {
           ...newInstructor,
-          fullName: firstName + ' ' + lastName
+          fullName: firstName + " " + lastName,
         };
-        
+
         // Update state
         setInstructors([...instructors, newInstructor]);
         setSelectedUser(newInstructorWithFullName);
         instructor = newInstructor;
-        
       } catch (err) {
         console.error("Error creating instructor:", err);
         toast.error("Failed to create instructor");
@@ -171,9 +196,10 @@ const AssignInstructor = () => {
         .then((updatedInstructor) => {
           const updatedInstructorWithFullName = {
             ...updatedInstructor,
-            fullName: updatedInstructor.firstName + ' ' + updatedInstructor.lastName
+            fullName:
+              updatedInstructor.firstName + " " + updatedInstructor.lastName,
           };
-          
+
           setInstructors((prevInstructors) =>
             prevInstructors.map((inst) =>
               inst.id === updatedInstructor.id ? updatedInstructor : inst
@@ -188,7 +214,7 @@ const AssignInstructor = () => {
           console.error("Error assigning module:", err);
           toast.error("Failed to assign module");
         });
-        return;
+      return;
     }
   };
 
@@ -240,9 +266,7 @@ const AssignInstructor = () => {
         // Update the instructors list
         setInstructors((prevInstructors) =>
           prevInstructors.map((instructor) =>
-            instructor.email === selectedUser.email
-              ? updatedUser
-              : instructor
+            instructor.email === selectedUser.email ? updatedUser : instructor
           )
         );
 
@@ -296,9 +320,7 @@ const AssignInstructor = () => {
           // Update the instructors list
           setInstructors((prevInstructors) =>
             prevInstructors.map((instructor) =>
-              instructor.email === selectedUser.email
-                ? updatedUser
-                : instructor
+              instructor.email === selectedUser.email ? updatedUser : instructor
             )
           );
 
@@ -323,7 +345,8 @@ const AssignInstructor = () => {
             ...selectedUser,
             classes: Object.fromEntries(
               Object.entries(selectedUser.classes || {}).filter(
-                ([mod, cls]) => !(mod === moduleToDelete && cls === classToDelete)
+                ([mod, cls]) =>
+                  !(mod === moduleToDelete && cls === classToDelete)
               )
             ),
           };
@@ -332,9 +355,7 @@ const AssignInstructor = () => {
           // Update the instructors list
           setInstructors((prevInstructors) =>
             prevInstructors.map((instructor) =>
-              instructor.email === selectedUser.email
-                ? updatedUser
-                : instructor
+              instructor.email === selectedUser.email ? updatedUser : instructor
             )
           );
 
@@ -371,14 +392,18 @@ const AssignInstructor = () => {
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
-      <SideNav 
+      <SideNav
         sidebarOpen={sidebarOpen}
         toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         mobileSidebarOpen={mobileSidebarOpen}
         toggleMobileSidebar={setMobileSidebarOpen}
       />
 
-      <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? "lg:ml-64" : "lg:ml-20"}`}>
+      <div
+        className={`flex-1 transition-all duration-300 ${
+          sidebarOpen ? "lg:ml-64" : "lg:ml-20"
+        }`}
+      >
         <div className="p-4 lg:p-8 w-full">
           {/* Toast Container */}
           <ToastContainer position="top-right" autoClose={3000} />
@@ -483,7 +508,9 @@ const AssignInstructor = () => {
                         {user.fullName}
                       </h2>
                       <p className="text-gray-500 text-sm">{user.email}</p>
-                      {instructors.some(instructor => instructor.email === user.email) && (
+                      {instructors.some(
+                        (instructor) => instructor.email === user.email
+                      ) && (
                         <span className="inline-block mt-1 px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
                           Instructor
                         </span>
@@ -502,12 +529,17 @@ const AssignInstructor = () => {
                 <div>
                   <h2 className="text-2xl font-bold text-gray-800">
                     <AcademicCapIcon className="w-8 h-8 text-purple-600 inline-block mr-3" />
-                    {selectedUser.fullName || selectedUser.firstName + ' ' + selectedUser.lastName}'s Assignments
+                    {selectedUser.fullName ||
+                      selectedUser.firstName + " " + selectedUser.lastName}
+                    's Assignments
                   </h2>
                   <p className="text-gray-500 mt-1">{selectedUser.email}</p>
-                  {!instructors.some(instructor => instructor.email === selectedUser.email) && (
+                  {!instructors.some(
+                    (instructor) => instructor.email === selectedUser.email
+                  ) && (
                     <p className="text-sm text-yellow-600 mt-1">
-                      This user is not yet an instructor. Assigning a module will create an instructor record.
+                      This user is not yet an instructor. Assigning a module
+                      will create an instructor record.
                     </p>
                   )}
                 </div>
@@ -520,15 +552,22 @@ const AssignInstructor = () => {
               </div>
 
               {/* Assigned Modules - only show if user is an instructor */}
-              {instructors.some(instructor => instructor.email === selectedUser.email) && (
+              {instructors.some(
+                (instructor) => instructor.email === selectedUser.email
+              ) && (
                 <div className="space-y-6">
                   {selectedUser.modules?.map((module) => (
-                    <div key={module} className="p-6 bg-gray-50 rounded-xl border border-gray-200">
+                    <div
+                      key={module}
+                      className="p-6 bg-gray-50 rounded-xl border border-gray-200"
+                    >
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-3">
                           <BookOpenIcon className="w-6 h-6 text-blue-500" />
                           <div>
-                            <h3 className="text-lg font-semibold text-gray-800">{module}</h3>
+                            <h3 className="text-lg font-semibold text-gray-800">
+                              {module}
+                            </h3>
                             <p className="text-sm text-gray-500">
                               {getCourseNameForModule(module)}
                             </p>
@@ -551,19 +590,24 @@ const AssignInstructor = () => {
                         <div className="flex items-center gap-4">
                           <select
                             value={selectedUser.classes?.[module] || ""}
-                            onChange={(e) => handleAssignClass(module, e.target.value)}
+                            onChange={(e) =>
+                              handleAssignClass(module, e.target.value)
+                            }
                             className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                           >
                             <option value="">Select Class</option>
                             {(() => {
                               // Find the course that contains this module
-                              const courseForModule = courses.find(c => 
-                                c.modules?.some(m => m.title === module)
+                              const courseForModule = courses.find((c) =>
+                                c.modules?.some((m) => m.title === module)
                               );
-                              
+
                               // Return groups only from this course
                               return courseForModule?.groups?.map((group) => (
-                                <option key={group.groupId} value={group.groupId}>
+                                <option
+                                  key={group.groupId}
+                                  value={group.groupId}
+                                >
                                   {group.groupName}
                                 </option>
                               ));

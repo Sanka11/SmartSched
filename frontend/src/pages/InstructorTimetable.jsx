@@ -1,16 +1,17 @@
 import { useState, useEffect } from "react";
-import { 
-  UserIcon, 
-  CalendarIcon, 
-  ClockIcon, 
-  AcademicCapIcon, 
+import {
+  UserIcon,
+  CalendarIcon,
+  ClockIcon,
+  AcademicCapIcon,
   BuildingOffice2Icon,
   Bars3Icon,
-  XMarkIcon
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import SideNav from "./SideNav";
+import api from "../services/api";
 
 const InstructorTimetable = () => {
   const [instructors, setInstructors] = useState([]);
@@ -22,34 +23,50 @@ const InstructorTimetable = () => {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   // Days including weekends
-  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-  
+  const days = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+  ];
+
   // Time slots from 7 AM to 7 PM with 1-hour gaps
   const timeSlots = Array.from({ length: 13 }, (_, i) => {
     const hour = 7 + i;
-    return `${hour.toString().padStart(2, '0')}:00`;
+    return `${hour.toString().padStart(2, "0")}:00`;
   });
 
   // Fetch data on component mount
   useEffect(() => {
     const fetchData = async () => {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        console.error("No token found. Please login again.");
+        toast.error("Unauthorized access. Please login again.");
+        setLoading(false);
+        return;
+      }
+
       try {
         const [instructorsRes, assignmentsRes] = await Promise.all([
-          fetch("http://localhost:8080/api/instructors"),
-          fetch("http://localhost:8080/api/allClassAssignments")
+          api.get("/api/instructors", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }),
+          api.get("/api/allClassAssignments", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }),
         ]);
-        
-        if (!instructorsRes.ok || !assignmentsRes.ok) {
-          throw new Error("Failed to fetch data");
-        }
 
-        const [instructorsData, assignmentsData] = await Promise.all([
-          instructorsRes.json(),
-          assignmentsRes.json()
-        ]);
-
-        setInstructors(instructorsData);
-        setAssignments(assignmentsData);
+        setInstructors(instructorsRes.data);
+        setAssignments(assignmentsRes.data);
       } catch (error) {
         console.error("Error fetching data:", error);
         toast.error("Failed to load data");
@@ -87,26 +104,34 @@ const InstructorTimetable = () => {
 
   // Get classes for a specific time slot
   const getClassesForSlot = (day, time) => {
-    return filteredAssignments.filter(assignment => {
-      return assignment.date === day && 
-             assignment.startTime <= time && 
-             assignment.endTime > time;
+    return filteredAssignments.filter((assignment) => {
+      return (
+        assignment.date === day &&
+        assignment.startTime <= time &&
+        assignment.endTime > time
+      );
     });
   };
 
   const assignmentsByDay = groupByDay(filteredAssignments);
-  const selectedInstructor = instructors.find(i => i.id === selectedInstructorId);
+  const selectedInstructor = instructors.find(
+    (i) => i.id === selectedInstructorId
+  );
 
   if (loading) {
     return (
       <div className="flex min-h-screen bg-gray-50">
-        <SideNav 
+        <SideNav
           sidebarOpen={sidebarOpen}
           toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
           mobileSidebarOpen={mobileSidebarOpen}
           toggleMobileSidebar={setMobileSidebarOpen}
         />
-        <div className={`flex-1 p-8 flex items-center justify-center ${sidebarOpen ? "lg:ml-64" : "lg:ml-20"}`}>
+        <div
+          className={`flex-1 p-8 flex items-center justify-center ${
+            sidebarOpen ? "lg:ml-64" : "lg:ml-20"
+          }`}
+        >
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
             <p className="mt-4 text-gray-600">Loading timetable data...</p>
@@ -118,17 +143,21 @@ const InstructorTimetable = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <SideNav 
+      <SideNav
         sidebarOpen={sidebarOpen}
         toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         mobileSidebarOpen={mobileSidebarOpen}
         toggleMobileSidebar={setMobileSidebarOpen}
       />
 
-      <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? "lg:ml-64" : "lg:ml-20"}`}>
+      <div
+        className={`flex-1 transition-all duration-300 ${
+          sidebarOpen ? "lg:ml-64" : "lg:ml-20"
+        }`}
+      >
         <div className="p-4 lg:p-8">
           <ToastContainer position="top-right" autoClose={3000} />
-          
+
           {/* Mobile header with toggle button */}
           <div className="lg:hidden flex items-center mb-6">
             <button
@@ -164,7 +193,10 @@ const InstructorTimetable = () => {
           <div className="bg-white rounded-xl shadow-sm p-6 mb-8 border border-gray-200">
             <div className="flex flex-col md:flex-row md:items-center gap-4">
               <div className="flex-1">
-                <label htmlFor="instructor-select" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="instructor-select"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Select Instructor
                 </label>
                 <select
@@ -181,7 +213,7 @@ const InstructorTimetable = () => {
                   ))}
                 </select>
               </div>
-              
+
               {selectedInstructor && (
                 <div className="bg-blue-50 p-4 rounded-lg flex items-center gap-3">
                   <div className="bg-blue-100 p-2 rounded-full">
@@ -189,9 +221,12 @@ const InstructorTimetable = () => {
                   </div>
                   <div>
                     <h3 className="font-medium text-gray-800">
-                      {selectedInstructor.firstName} {selectedInstructor.lastName}
+                      {selectedInstructor.firstName}{" "}
+                      {selectedInstructor.lastName}
                     </h3>
-                    <p className="text-sm text-gray-600">{selectedInstructor.email}</p>
+                    <p className="text-sm text-gray-600">
+                      {selectedInstructor.email}
+                    </p>
                   </div>
                 </div>
               )}
@@ -211,12 +246,18 @@ const InstructorTimetable = () => {
                     <div>
                       <p className="text-sm text-gray-500">Courses Teaching</p>
                       <p className="text-2xl font-bold text-gray-800">
-                        {[...new Set(filteredAssignments.map(a => a.courseName))].length}
+                        {
+                          [
+                            ...new Set(
+                              filteredAssignments.map((a) => a.courseName)
+                            ),
+                          ].length
+                        }
                       </p>
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
                   <div className="flex items-center gap-3">
                     <div className="bg-purple-100 p-2 rounded-full">
@@ -230,16 +271,24 @@ const InstructorTimetable = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
                   <div className="flex items-center gap-3">
                     <div className="bg-amber-100 p-2 rounded-full">
                       <BuildingOffice2Icon className="w-5 h-5 text-amber-600" />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Teaching Locations</p>
+                      <p className="text-sm text-gray-500">
+                        Teaching Locations
+                      </p>
                       <p className="text-2xl font-bold text-gray-800">
-                        {[...new Set(filteredAssignments.map(a => a.location))].length}
+                        {
+                          [
+                            ...new Set(
+                              filteredAssignments.map((a) => a.location)
+                            ),
+                          ].length
+                        }
                       </p>
                     </div>
                   </div>
@@ -252,32 +301,37 @@ const InstructorTimetable = () => {
                   <CalendarIcon className="w-5 h-5 text-blue-600" />
                   Weekly Timetable (7 AM - 7 PM)
                 </h2>
-                
+
                 <div className="overflow-x-auto">
                   <table className="w-full border-collapse">
                     <thead>
                       <tr>
-                        <th className="p-3 border bg-gray-50 text-left text-sm font-medium text-gray-500">Time</th>
-                        {days.map(day => (
-                          <th key={day} className="p-3 border bg-gray-50 text-center text-sm font-medium text-gray-500">
+                        <th className="p-3 border bg-gray-50 text-left text-sm font-medium text-gray-500">
+                          Time
+                        </th>
+                        {days.map((day) => (
+                          <th
+                            key={day}
+                            className="p-3 border bg-gray-50 text-center text-sm font-medium text-gray-500"
+                          >
                             {day.substring(0, 3)}
                           </th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {timeSlots.map(time => (
+                      {timeSlots.map((time) => (
                         <tr key={time}>
                           <td className="p-3 border text-sm text-gray-600 font-medium">
                             {time}
                           </td>
-                          {days.map(day => {
+                          {days.map((day) => {
                             const slotClasses = getClassesForSlot(day, time);
-                            
+
                             return (
                               <td key={`${day}-${time}`} className="p-1 border">
-                                {slotClasses.map(assignment => (
-                                  <div 
+                                {slotClasses.map((assignment) => (
+                                  <div
                                     key={assignment.id}
                                     className="bg-blue-50 border border-blue-100 rounded p-2 mb-1 text-xs"
                                   >
@@ -310,46 +364,58 @@ const InstructorTimetable = () => {
                 <h2 className="text-xl font-semibold text-gray-800 mb-4">
                   Class Schedule Details
                 </h2>
-                
+
                 {filteredAssignments.length > 0 ? (
                   <div className="space-y-3">
-                    {days.map(day => (
-                      assignmentsByDay[day]?.length > 0 && (
-                        <div key={day}>
-                          <h3 className="font-medium text-gray-700 mb-2">{day}</h3>
-                          <div className="space-y-2">
-                            {assignmentsByDay[day]
-                              .sort((a, b) => a.startTime.localeCompare(b.startTime))
-                              .map(assignment => (
-                                <div 
-                                  key={assignment.id}
-                                  className="p-4 bg-gray-50 rounded-lg border border-gray-200"
-                                >
-                                  <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                                    <div>
-                                      <p className="font-medium text-gray-800">
-                                        {assignment.courseName} - {assignment.moduleName}
-                                      </p>
-                                      <p className="text-sm text-gray-600">
-                                        Group: {assignment.groupName}
-                                      </p>
-                                    </div>
-                                    <div className="mt-2 md:mt-0">
-                                      <p className="text-sm text-gray-700">
-                                        <span className="font-medium">Time:</span> {assignment.startTime} - {assignment.endTime}
-                                      </p>
-                                      <p className="text-sm text-gray-700">
-                                        <span className="font-medium">Location:</span> {assignment.location}
-                                      </p>
+                    {days.map(
+                      (day) =>
+                        assignmentsByDay[day]?.length > 0 && (
+                          <div key={day}>
+                            <h3 className="font-medium text-gray-700 mb-2">
+                              {day}
+                            </h3>
+                            <div className="space-y-2">
+                              {assignmentsByDay[day]
+                                .sort((a, b) =>
+                                  a.startTime.localeCompare(b.startTime)
+                                )
+                                .map((assignment) => (
+                                  <div
+                                    key={assignment.id}
+                                    className="p-4 bg-gray-50 rounded-lg border border-gray-200"
+                                  >
+                                    <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                                      <div>
+                                        <p className="font-medium text-gray-800">
+                                          {assignment.courseName} -{" "}
+                                          {assignment.moduleName}
+                                        </p>
+                                        <p className="text-sm text-gray-600">
+                                          Group: {assignment.groupName}
+                                        </p>
+                                      </div>
+                                      <div className="mt-2 md:mt-0">
+                                        <p className="text-sm text-gray-700">
+                                          <span className="font-medium">
+                                            Time:
+                                          </span>{" "}
+                                          {assignment.startTime} -{" "}
+                                          {assignment.endTime}
+                                        </p>
+                                        <p className="text-sm text-gray-700">
+                                          <span className="font-medium">
+                                            Location:
+                                          </span>{" "}
+                                          {assignment.location}
+                                        </p>
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
-                              ))
-                            }
+                                ))}
+                            </div>
                           </div>
-                        </div>
-                      )
-                    ))}
+                        )
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-8 text-gray-500">
@@ -366,7 +432,8 @@ const InstructorTimetable = () => {
                 Select an instructor to view timetable
               </h3>
               <p className="text-gray-500">
-                Choose an instructor from the dropdown above to see their teaching schedule
+                Choose an instructor from the dropdown above to see their
+                teaching schedule
               </p>
             </div>
           )}

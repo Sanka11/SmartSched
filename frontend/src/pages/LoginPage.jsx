@@ -35,14 +35,16 @@ const LoginPage = () => {
 
     try {
       const response = await api.post("/api/users/login", credentials);
-      const loggedUser = response.data;
+      const { user, token } = response.data;
 
       // Save session
-      localStorage.setItem("user", JSON.stringify(loggedUser));
-      setUser(loggedUser);
+      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("token", token);
+      setUser(user);
 
-      const role = loggedUser.role || "user";
+      const role = user.role || "user";
       setUserRole(role);
+
       setShowSuccess(true);
     } catch (error) {
       console.error("Login error:", error);

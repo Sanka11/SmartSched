@@ -1,15 +1,16 @@
 import { useState, useRef } from "react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
-import { 
-  AcademicCapIcon, 
-  UserGroupIcon, 
-  UserIcon, 
+import {
+  AcademicCapIcon,
+  UserGroupIcon,
+  UserIcon,
   ArrowDownTrayIcon,
   Bars3Icon,
-  XMarkIcon 
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import SideNav from "./SideNav";
+import api from "../services/api"; // Adjust path if needed
 
 function GenerateReportAssignManager() {
   const [instructors, setInstructors] = useState([]);
@@ -23,11 +24,16 @@ function GenerateReportAssignManager() {
   const fetchInstructorAssignments = async () => {
     try {
       setLoading(true);
-      const response = await fetch("http://localhost:8080/api/instructors");
-      if (!response.ok) throw new Error("Failed to fetch instructor assignments");
-      const data = await response.json();
-      setInstructors(data);
-      setActiveReport('instructors');
+      const token = localStorage.getItem("token");
+
+      const response = await api.get("/api/instructors", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setInstructors(response.data);
+      setActiveReport("instructors");
     } catch (error) {
       console.error("Error fetching instructor assignments:", error);
     } finally {
@@ -38,11 +44,16 @@ function GenerateReportAssignManager() {
   const fetchStudentEnrollments = async () => {
     try {
       setLoading(true);
-      const response = await fetch("http://localhost:8080/api/student-enrollments");
-      if (!response.ok) throw new Error("Failed to fetch student enrollments");
-      const data = await response.json();
-      setStudents(data);
-      setActiveReport('students');
+      const token = localStorage.getItem("token");
+
+      const response = await api.get("/api/student-enrollments", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setStudents(response.data);
+      setActiveReport("students");
     } catch (error) {
       console.error("Error fetching student enrollments:", error);
     } finally {
@@ -71,14 +82,18 @@ function GenerateReportAssignManager() {
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
-      <SideNav 
+      <SideNav
         sidebarOpen={sidebarOpen}
         toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         mobileSidebarOpen={mobileSidebarOpen}
         toggleMobileSidebar={setMobileSidebarOpen}
       />
 
-      <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? "lg:ml-64" : "lg:ml-20"}`}>
+      <div
+        className={`flex-1 transition-all duration-300 ${
+          sidebarOpen ? "lg:ml-64" : "lg:ml-20"
+        }`}
+      >
         <div className="p-4 lg:p-8 w-full">
           <div className="max-w-7xl mx-auto">
             {/* Mobile header */}
@@ -118,7 +133,7 @@ function GenerateReportAssignManager() {
                   disabled={loading}
                 >
                   <UserIcon className="h-5 w-5" />
-                  {loading && activeReport === 'instructors' ? (
+                  {loading && activeReport === "instructors" ? (
                     <span>Loading Assignments...</span>
                   ) : (
                     <span>Show Instructor Assignments</span>
@@ -131,7 +146,7 @@ function GenerateReportAssignManager() {
                   disabled={loading}
                 >
                   <UserGroupIcon className="h-5 w-5" />
-                  {loading && activeReport === 'students' ? (
+                  {loading && activeReport === "students" ? (
                     <span>Loading Enrollments...</span>
                   ) : (
                     <span>Show Student Enrollments</span>
@@ -141,7 +156,7 @@ function GenerateReportAssignManager() {
             </div>
 
             {/* Report Display Area */}
-            {activeReport === 'instructors' && (
+            {activeReport === "instructors" && (
               <div className="animate-fade-in">
                 <div className="flex items-center justify-between mb-6 p-4 bg-white rounded-t-xl shadow-lg">
                   <h2 className="text-2xl font-semibold text-gray-800 flex items-center gap-2">
@@ -149,7 +164,12 @@ function GenerateReportAssignManager() {
                     Instructor Assignments
                   </h2>
                   <button
-                    onClick={() => downloadPDF("instructor_assignments", "Instructor Assignments")}
+                    onClick={() =>
+                      downloadPDF(
+                        "instructor_assignments",
+                        "Instructor Assignments"
+                      )
+                    }
                     className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
                   >
                     <ArrowDownTrayIcon className="h-5 w-5" />
@@ -157,22 +177,36 @@ function GenerateReportAssignManager() {
                   </button>
                 </div>
 
-                <div ref={tableRef} className="bg-white rounded-b-xl shadow-lg overflow-hidden">
+                <div
+                  ref={tableRef}
+                  className="bg-white rounded-b-xl shadow-lg overflow-hidden"
+                >
                   <table className="w-full">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-4 text-left font-medium text-gray-700">Instructor</th>
-                        <th className="px-6 py-4 text-left font-medium text-gray-700">Email</th>
-                        <th className="px-6 py-4 text-left font-medium text-gray-700">Modules</th>
+                        <th className="px-6 py-4 text-left font-medium text-gray-700">
+                          Instructor
+                        </th>
+                        <th className="px-6 py-4 text-left font-medium text-gray-700">
+                          Email
+                        </th>
+                        <th className="px-6 py-4 text-left font-medium text-gray-700">
+                          Modules
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
                       {instructors.map((instructor) => (
-                        <tr key={instructor.id} className="hover:bg-gray-50 transition-colors">
+                        <tr
+                          key={instructor.id}
+                          className="hover:bg-gray-50 transition-colors"
+                        >
                           <td className="px-6 py-4 font-medium text-gray-800">
                             {instructor.firstName} {instructor.lastName}
                           </td>
-                          <td className="px-6 py-4 text-gray-600">{instructor.email}</td>
+                          <td className="px-6 py-4 text-gray-600">
+                            {instructor.email}
+                          </td>
                           <td className="px-6 py-4">
                             <div className="flex flex-wrap gap-2">
                               {instructor.modules?.map((module, index) => (
@@ -193,7 +227,7 @@ function GenerateReportAssignManager() {
               </div>
             )}
 
-            {activeReport === 'students' && (
+            {activeReport === "students" && (
               <div className="animate-fade-in">
                 <div className="flex items-center justify-between mb-6 p-4 bg-white rounded-t-xl shadow-lg">
                   <h2 className="text-2xl font-semibold text-gray-800 flex items-center gap-2">
@@ -201,7 +235,9 @@ function GenerateReportAssignManager() {
                     Student Enrollments
                   </h2>
                   <button
-                    onClick={() => downloadPDF("student_enrollments", "Student Enrollments")}
+                    onClick={() =>
+                      downloadPDF("student_enrollments", "Student Enrollments")
+                    }
                     className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
                   >
                     <ArrowDownTrayIcon className="h-5 w-5" />
@@ -209,22 +245,36 @@ function GenerateReportAssignManager() {
                   </button>
                 </div>
 
-                <div ref={tableRef} className="bg-white rounded-b-xl shadow-lg overflow-hidden">
+                <div
+                  ref={tableRef}
+                  className="bg-white rounded-b-xl shadow-lg overflow-hidden"
+                >
                   <table className="w-full">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-4 text-left font-medium text-gray-700">Student</th>
-                        <th className="px-6 py-4 text-left font-medium text-gray-700">Email</th>
-                        <th className="px-6 py-4 text-left font-medium text-gray-700">Enrolled Courses</th>
+                        <th className="px-6 py-4 text-left font-medium text-gray-700">
+                          Student
+                        </th>
+                        <th className="px-6 py-4 text-left font-medium text-gray-700">
+                          Email
+                        </th>
+                        <th className="px-6 py-4 text-left font-medium text-gray-700">
+                          Enrolled Courses
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
                       {students.map((student) => (
-                        <tr key={student.id} className="hover:bg-gray-50 transition-colors">
+                        <tr
+                          key={student.id}
+                          className="hover:bg-gray-50 transition-colors"
+                        >
                           <td className="px-6 py-4 font-medium text-gray-800">
                             {student.firstName} {student.lastName}
                           </td>
-                          <td className="px-6 py-4 text-gray-600">{student.email}</td>
+                          <td className="px-6 py-4 text-gray-600">
+                            {student.email}
+                          </td>
                           <td className="px-6 py-4">
                             <div className="flex flex-wrap gap-2">
                               {student.courses?.map((course, index) => (

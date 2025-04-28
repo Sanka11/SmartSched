@@ -76,8 +76,25 @@
   <groupId>org.springframework.boot</groupId>
   <artifactId>spring-boot-starter-mail</artifactId>
 </dependency>
-
-
+<!-- JWT Dependency -->
+<!-- JWT dependencies (for Java 17/21 compatible projects) -->
+<dependency>
+    <groupId>io.jsonwebtoken</groupId>
+    <artifactId>jjwt-api</artifactId>
+    <version>0.11.5</version>
+</dependency>
+<dependency>
+    <groupId>io.jsonwebtoken</groupId>
+    <artifactId>jjwt-impl</artifactId>
+    <version>0.11.5</version>
+    <scope>runtime</scope>
+</dependency>
+<dependency>
+    <groupId>io.jsonwebtoken</groupId>
+    <artifactId>jjwt-jackson</artifactId> <!-- use jackson instead of DatatypeConverter -->
+    <version>0.11.5</version>
+    <scope>runtime</scope>
+</dependency>
 	</dependencies>
 
 	<build>

@@ -8,9 +8,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import com.smartsched.security.JwtTokenUtil;
+
 
 @RestController
 @RequestMapping("/api/users")
@@ -19,6 +22,30 @@ public class UserController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+private JwtTokenUtil jwtTokenUtil;
+
+@PostMapping("/login")
+public ResponseEntity<?> loginUser(@RequestBody Map<String, String> loginRequest) {
+    String email = loginRequest.get("email");
+    String password = loginRequest.get("password");
+
+    try {
+        User user = userService.authenticateUser(email, password);
+
+        String token = jwtTokenUtil.generateToken(user.getEmail(), user.getRole());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("token", token);
+        response.put("user", user);
+
+        return ResponseEntity.ok(response);
+    } catch (RuntimeException e) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+    }
+}
+
 
     // ✅ Register new user
     @PostMapping("/register")
@@ -38,23 +65,10 @@ public class UserController {
         }
     }
 
-    // ✅ Login
-    @PostMapping("/login")
-    public ResponseEntity<?> loginUser(@RequestBody Map<String, String> loginRequest) {
-        String email = loginRequest.get("email");
-        String password = loginRequest.get("password");
-
-        try {
-            User user = userService.authenticateUser(email, password);
-            return ResponseEntity.ok(user);
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
-        }
-    }
 
     // ✅ Get all users (Admin + Superadmin only)
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("@customSecurity.checkUserRoles(authentication, 'admin', 'superadmin', 'user manager', 'assignment manager')")
     public ResponseEntity<?> getAllUsers() {
         try {
             List<User> users = userService.getAllUsers();
@@ -66,7 +80,7 @@ public class UserController {
 
     // ✅ Get user by ID (All roles)
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("@customSecurity.checkUserRoles(authentication, 'admin', 'superadmin', 'user manager', 'assignment manager')")
     public ResponseEntity<?> getUserProfile(@PathVariable String id) {
         Optional<User> user = userService.getUserById(id);
         return user.map(ResponseEntity::ok)
@@ -75,7 +89,7 @@ public class UserController {
 
     // ✅ Add new user (Admin + Superadmin)
     @PostMapping("/add")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("@customSecurity.checkUserRoles(authentication, 'admin', 'superadmin', 'user manager', 'assignment manager')")
     public ResponseEntity<?> addUser(@RequestBody User user) {
         try {
             if (user.getRole() == null) {
@@ -93,7 +107,7 @@ public class UserController {
 
     // ✅ Update role/permissions
     @PutMapping("/{userId}/role")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("@customSecurity.checkUserRoles(authentication, 'admin', 'superadmin', 'user manager', 'assignment manager')")
     public ResponseEntity<?> updateUserRoleAndPermissions(
             @PathVariable String userId,
             @RequestParam(required = false) String role,
@@ -109,7 +123,7 @@ public class UserController {
 
     // ✅ Delete user (Admin + Superadmin)
     @DeleteMapping("/{userId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    @PreAuthorize("@customSecurity.checkUserRoles(authentication, 'admin', 'superadmin', 'user manager', 'assignment manager')")
     public ResponseEntity<?> deleteUser(@PathVariable String userId) {
         try {
             userService.deleteUser(userId);

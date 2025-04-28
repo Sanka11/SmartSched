@@ -3,13 +3,13 @@ import api from "../services/api";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { motion } from "framer-motion";
-import { 
-  FaEdit, 
-  FaTrash, 
-  FaSave, 
-  FaTimes, 
+import {
+  FaEdit,
+  FaTrash,
+  FaSave,
+  FaTimes,
   FaFilePdf,
-  FaUserCog
+  FaUserCog,
 } from "react-icons/fa";
 import { Tab, Tabs, TabList, TabPanel } from "react-tabs";
 import "react-tabs/style/react-tabs.css";
@@ -17,8 +17,8 @@ import Sidebar from "../components/Sidebar";
 import MobileHeader from "../components/MobileHeader";
 import UserTable from "../components/UserTable";
 import FilterControls from "../components/FilterControls";
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const UserManagerPage = () => {
   const [users, setUsers] = useState([]);
@@ -37,7 +37,12 @@ const UserManagerPage = () => {
 
   const fetchAllUsers = async () => {
     try {
-      const response = await api.get("/api/users");
+      const response = await api.get("/api/users", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
       const usersWithPermissions = response.data.map((user) => ({
         ...user,
         permissions: user.permissions || [],
@@ -61,8 +66,8 @@ const UserManagerPage = () => {
           pauseOnHover: true,
           draggable: true,
           progress: undefined,
-          className: 'bg-white border-l-4 border-red-500 shadow-lg',
-          bodyClassName: 'text-gray-800',
+          className: "bg-white border-l-4 border-red-500 shadow-lg",
+          bodyClassName: "text-gray-800",
         }
       );
     }
@@ -81,7 +86,11 @@ const UserManagerPage = () => {
           role: editedRole,
           permissions: editedPermissions.join(","),
         },
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
       });
+
       fetchAllUsers();
       setEditingUserId(null);
       toast.success(
@@ -100,8 +109,8 @@ const UserManagerPage = () => {
           pauseOnHover: true,
           draggable: true,
           progress: undefined,
-          className: 'bg-white border-l-4 border-green-500 shadow-lg',
-          bodyClassName: 'text-gray-800',
+          className: "bg-white border-l-4 border-green-500 shadow-lg",
+          bodyClassName: "text-gray-800",
         }
       );
     } catch (error) {
@@ -122,8 +131,8 @@ const UserManagerPage = () => {
           pauseOnHover: true,
           draggable: true,
           progress: undefined,
-          className: 'bg-white border-l-4 border-red-500 shadow-lg',
-          bodyClassName: 'text-gray-800',
+          className: "bg-white border-l-4 border-red-500 shadow-lg",
+          bodyClassName: "text-gray-800",
         }
       );
     }
@@ -153,8 +162,8 @@ const UserManagerPage = () => {
           pauseOnHover: true,
           draggable: true,
           progress: undefined,
-          className: 'bg-white border-l-4 border-green-500 shadow-lg',
-          bodyClassName: 'text-gray-800',
+          className: "bg-white border-l-4 border-green-500 shadow-lg",
+          bodyClassName: "text-gray-800",
         }
       );
     } catch (error) {
@@ -175,8 +184,8 @@ const UserManagerPage = () => {
           pauseOnHover: true,
           draggable: true,
           progress: undefined,
-          className: 'bg-white border-l-4 border-red-500 shadow-lg',
-          bodyClassName: 'text-gray-800',
+          className: "bg-white border-l-4 border-red-500 shadow-lg",
+          bodyClassName: "text-gray-800",
         }
       );
     }
@@ -215,8 +224,8 @@ const UserManagerPage = () => {
           pauseOnHover: true,
           draggable: true,
           progress: undefined,
-          className: 'bg-white border-l-4 border-yellow-500 shadow-lg',
-          bodyClassName: 'text-gray-800',
+          className: "bg-white border-l-4 border-yellow-500 shadow-lg",
+          bodyClassName: "text-gray-800",
         }
       );
       return;
@@ -278,7 +287,11 @@ const UserManagerPage = () => {
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 transform ${sidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full'} bg-white shadow-lg z-30 transition-all duration-300 ease-in-out`}>
+      <div
+        className={`fixed inset-y-0 left-0 transform ${
+          sidebarOpen ? "translate-x-0 w-64" : "-translate-x-full"
+        } bg-white shadow-lg z-30 transition-all duration-300 ease-in-out`}
+      >
         <Sidebar
           sidebarOpen={sidebarOpen}
           mobileSidebarOpen={mobileSidebarOpen}
@@ -291,24 +304,58 @@ const UserManagerPage = () => {
       </div>
 
       {/* Main Content */}
-      <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-0'}`}>
+      <div
+        className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${
+          sidebarOpen ? "ml-64" : "ml-0"
+        }`}
+      >
         <MobileHeader toggleMobileSidebar={toggleMobileSidebar} />
 
         <main className="flex-1 overflow-y-auto p-6 bg-white">
           <div className="max-w-7xl mx-auto">
-            <h1 className="text-2xl font-bold text-gray-800 mb-6">User Management</h1>
-            
-            <Tabs 
-              selectedIndex={["admin", "lecturer", "student", "course manager", "assignment manager", "user manager", "user"].indexOf(activeTab)} 
-              onSelect={(index) => setActiveTab(["admin", "lecturer", "student", "course manager", "assignment manager", "user manager", "user"][index])}
+            <h1 className="text-2xl font-bold text-gray-800 mb-6">
+              User Management
+            </h1>
+
+            <Tabs
+              selectedIndex={[
+                "admin",
+                "lecturer",
+                "student",
+                "course manager",
+                "assignment manager",
+                "user manager",
+                "user",
+              ].indexOf(activeTab)}
+              onSelect={(index) =>
+                setActiveTab(
+                  [
+                    "admin",
+                    "lecturer",
+                    "student",
+                    "course manager",
+                    "assignment manager",
+                    "user manager",
+                    "user",
+                  ][index]
+                )
+              }
             >
               <TabList className="flex space-x-1 mb-6 p-1 bg-gray-100 rounded-md">
-                {["admin", "lecturer", "student", "course manager", "assignment manager", "user manager", "user"].map((role) => (
+                {[
+                  "admin",
+                  "lecturer",
+                  "student",
+                  "course manager",
+                  "assignment manager",
+                  "user manager",
+                  "user",
+                ].map((role) => (
                   <Tab
                     key={role}
                     className={`px-3 py-2 text-sm rounded-md cursor-pointer transition-all ${
-                      activeTab === role 
-                        ? "bg-white text-indigo-600 shadow font-medium" 
+                      activeTab === role
+                        ? "bg-white text-indigo-600 shadow font-medium"
                         : "text-gray-600 hover:text-indigo-500 hover:bg-gray-50"
                     }`}
                   >
@@ -327,10 +374,16 @@ const UserManagerPage = () => {
                 />
               </div>
 
-              {["admin", "lecturer", "student", "course manager", "assignment manager", "user manager", "user"].map((role) => (
-                <TabPanel key={role}>
-                  {renderRoleTable(role)}
-                </TabPanel>
+              {[
+                "admin",
+                "lecturer",
+                "student",
+                "course manager",
+                "assignment manager",
+                "user manager",
+                "user",
+              ].map((role) => (
+                <TabPanel key={role}>{renderRoleTable(role)}</TabPanel>
               ))}
             </Tabs>
           </div>
@@ -347,7 +400,9 @@ const UserManagerPage = () => {
         pauseOnFocusLoss
         draggable
         pauseOnHover
-        toastClassName={() => "relative flex p-4 min-h-10 rounded-md justify-between overflow-hidden cursor-pointer bg-white shadow-lg my-2"}
+        toastClassName={() =>
+          "relative flex p-4 min-h-10 rounded-md justify-between overflow-hidden cursor-pointer bg-white shadow-lg my-2"
+        }
       />
     </div>
   );

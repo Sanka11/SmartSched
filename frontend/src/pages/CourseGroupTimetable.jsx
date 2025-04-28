@@ -1,8 +1,14 @@
 import { useState, useEffect } from "react";
-import { AcademicCapIcon, UserGroupIcon, CalendarIcon, ClockIcon } from "@heroicons/react/24/outline";
+import {
+  AcademicCapIcon,
+  UserGroupIcon,
+  CalendarIcon,
+  ClockIcon,
+} from "@heroicons/react/24/outline";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import SideNav from "./SideNav";
+import api from "../services/api"; // Correct relative path
 
 const CourseGroupTimetable = () => {
   const [courses, setCourses] = useState([]);
@@ -13,37 +19,53 @@ const CourseGroupTimetable = () => {
   const [filteredAssignments, setFilteredAssignments] = useState([]);
 
   // Days including weekends
-  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-  
+  const days = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+  ];
+
   // Time slots (1-hour periods)
   const timeSlots = [];
   for (let hour = 8; hour <= 18; hour++) {
-    timeSlots.push(`${hour.toString().padStart(2, '0')}:00`);
+    timeSlots.push(`${hour.toString().padStart(2, "0")}:00`);
     if (hour !== 18) {
-      timeSlots.push(`${hour.toString().padStart(2, '0')}:30`);
+      timeSlots.push(`${hour.toString().padStart(2, "0")}:30`);
     }
   }
 
   // Fetch data on component mount
   useEffect(() => {
     const fetchData = async () => {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        console.error("No token found. Please login again.");
+        toast.error("Unauthorized access. Please login again.");
+        setLoading(false);
+        return;
+      }
+
       try {
         const [coursesRes, assignmentsRes] = await Promise.all([
-          fetch("http://localhost:8080/api/allcourses"),
-          fetch("http://localhost:8080/api/allClassAssignments")
+          api.get("/api/allcourses", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }),
+          api.get("/api/allClassAssignments", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }),
         ]);
-        
-        if (!coursesRes.ok || !assignmentsRes.ok) {
-          throw new Error("Failed to fetch data");
-        }
 
-        const [coursesData, assignmentsData] = await Promise.all([
-          coursesRes.json(),
-          assignmentsRes.json()
-        ]);
-
-        setCourses(coursesData);
-        setAssignments(assignmentsData);
+        setCourses(coursesRes.data);
+        setAssignments(assignmentsRes.data);
       } catch (error) {
         console.error("Error fetching data:", error);
         toast.error("Failed to load data");
@@ -59,8 +81,8 @@ const CourseGroupTimetable = () => {
   useEffect(() => {
     if (selectedCourseId && selectedGroupId) {
       const filtered = assignments.filter(
-        (assignment) => 
-          assignment.courseId === selectedCourseId && 
+        (assignment) =>
+          assignment.courseId === selectedCourseId &&
           assignment.groupId === selectedGroupId
       );
       setFilteredAssignments(filtered);
@@ -71,20 +93,20 @@ const CourseGroupTimetable = () => {
 
   // Get groups for selected course
   const getGroupsForCourse = () => {
-    const course = courses.find(c => c.id === selectedCourseId);
+    const course = courses.find((c) => c.id === selectedCourseId);
     return course?.groups || [];
   };
 
   // Get course name by ID
   const getCourseName = () => {
-    const course = courses.find(c => c.id === selectedCourseId);
+    const course = courses.find((c) => c.id === selectedCourseId);
     return course?.name || "";
   };
 
   // Get group name by ID
   const getGroupName = () => {
-    const course = courses.find(c => c.id === selectedCourseId);
-    const group = course?.groups?.find(g => g.groupId === selectedGroupId);
+    const course = courses.find((c) => c.id === selectedCourseId);
+    const group = course?.groups?.find((g) => g.groupId === selectedGroupId);
     return group?.groupName || "";
   };
 
@@ -102,10 +124,12 @@ const CourseGroupTimetable = () => {
 
   // Get classes for a specific time slot
   const getClassesForSlot = (day, time) => {
-    return filteredAssignments.filter(assignment => {
-      return assignment.date === day && 
-             assignment.startTime <= time && 
-             assignment.endTime > time;
+    return filteredAssignments.filter((assignment) => {
+      return (
+        assignment.date === day &&
+        assignment.startTime <= time &&
+        assignment.endTime > time
+      );
     });
   };
 
@@ -130,7 +154,7 @@ const CourseGroupTimetable = () => {
       <SideNav />
       <div className="flex-1 p-8">
         <ToastContainer position="top-right" autoClose={3000} />
-        
+
         {/* Page Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-800 mb-2 flex items-center gap-2">
@@ -147,7 +171,10 @@ const CourseGroupTimetable = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Course Selection */}
             <div>
-              <label htmlFor="course-select" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="course-select"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Select Course
               </label>
               <select
@@ -167,10 +194,13 @@ const CourseGroupTimetable = () => {
                 ))}
               </select>
             </div>
-            
+
             {/* Group Selection */}
             <div>
-              <label htmlFor="group-select" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="group-select"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Select Group
               </label>
               <select
@@ -189,7 +219,7 @@ const CourseGroupTimetable = () => {
               </select>
             </div>
           </div>
-          
+
           {/* Selected Course/Group Info */}
           {selectedCourseId && selectedGroupId && (
             <div className="mt-4 p-4 bg-blue-50 rounded-lg flex items-center gap-4">
@@ -225,7 +255,7 @@ const CourseGroupTimetable = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
                 <div className="flex items-center gap-3">
                   <div className="bg-purple-100 p-2 rounded-full">
@@ -234,12 +264,18 @@ const CourseGroupTimetable = () => {
                   <div>
                     <p className="text-sm text-gray-500">Modules</p>
                     <p className="text-2xl font-bold text-gray-800">
-                      {[...new Set(filteredAssignments.map(a => a.moduleName))].length}
+                      {
+                        [
+                          ...new Set(
+                            filteredAssignments.map((a) => a.moduleName)
+                          ),
+                        ].length
+                      }
                     </p>
                   </div>
                 </div>
               </div>
-              
+
               <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
                 <div className="flex items-center gap-3">
                   <div className="bg-amber-100 p-2 rounded-full">
@@ -248,7 +284,13 @@ const CourseGroupTimetable = () => {
                   <div>
                     <p className="text-sm text-gray-500">Instructors</p>
                     <p className="text-2xl font-bold text-gray-800">
-                      {[...new Set(filteredAssignments.map(a => a.instructorName))].length}
+                      {
+                        [
+                          ...new Set(
+                            filteredAssignments.map((a) => a.instructorName)
+                          ),
+                        ].length
+                      }
                     </p>
                   </div>
                 </div>
@@ -261,32 +303,37 @@ const CourseGroupTimetable = () => {
                 <CalendarIcon className="w-5 h-5 text-blue-600" />
                 Weekly Timetable for {getGroupName()}
               </h2>
-              
+
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse">
                   <thead>
                     <tr>
-                      <th className="p-3 border bg-gray-50 text-left text-sm font-medium text-gray-500">Time</th>
-                      {days.map(day => (
-                        <th key={day} className="p-3 border bg-gray-50 text-center text-sm font-medium text-gray-500">
+                      <th className="p-3 border bg-gray-50 text-left text-sm font-medium text-gray-500">
+                        Time
+                      </th>
+                      {days.map((day) => (
+                        <th
+                          key={day}
+                          className="p-3 border bg-gray-50 text-center text-sm font-medium text-gray-500"
+                        >
                           {day.substring(0, 3)}
                         </th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {timeSlots.map(time => (
+                    {timeSlots.map((time) => (
                       <tr key={time}>
                         <td className="p-3 border text-sm text-gray-600 font-medium">
                           {time}
                         </td>
-                        {days.map(day => {
+                        {days.map((day) => {
                           const slotClasses = getClassesForSlot(day, time);
-                          
+
                           return (
                             <td key={`${day}-${time}`} className="p-1 border">
-                              {slotClasses.map(assignment => (
-                                <div 
+                              {slotClasses.map((assignment) => (
+                                <div
                                   key={assignment.id}
                                   className="bg-blue-50 border border-blue-100 rounded p-2 mb-1 text-xs"
                                 >
@@ -316,46 +363,57 @@ const CourseGroupTimetable = () => {
               <h2 className="text-xl font-semibold text-gray-800 mb-4">
                 Class Schedule Details
               </h2>
-              
+
               {filteredAssignments.length > 0 ? (
                 <div className="space-y-3">
-                  {days.map(day => (
-                    assignmentsByDay[day]?.length > 0 && (
-                      <div key={day}>
-                        <h3 className="font-medium text-gray-700 mb-2">{day}</h3>
-                        <div className="space-y-2">
-                          {assignmentsByDay[day]
-                            .sort((a, b) => a.startTime.localeCompare(b.startTime))
-                            .map(assignment => (
-                              <div 
-                                key={assignment.id}
-                                className="p-4 bg-gray-50 rounded-lg border border-gray-200"
-                              >
-                                <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                                  <div>
-                                    <p className="font-medium text-gray-800">
-                                      {assignment.moduleName}
-                                    </p>
-                                    <p className="text-sm text-gray-600">
-                                      Instructor: {assignment.instructorName}
-                                    </p>
-                                  </div>
-                                  <div className="mt-2 md:mt-0">
-                                    <p className="text-sm text-gray-700">
-                                      <span className="font-medium">Time:</span> {assignment.startTime} - {assignment.endTime}
-                                    </p>
-                                    <p className="text-sm text-gray-700">
-                                      <span className="font-medium">Location:</span> {assignment.location}
-                                    </p>
+                  {days.map(
+                    (day) =>
+                      assignmentsByDay[day]?.length > 0 && (
+                        <div key={day}>
+                          <h3 className="font-medium text-gray-700 mb-2">
+                            {day}
+                          </h3>
+                          <div className="space-y-2">
+                            {assignmentsByDay[day]
+                              .sort((a, b) =>
+                                a.startTime.localeCompare(b.startTime)
+                              )
+                              .map((assignment) => (
+                                <div
+                                  key={assignment.id}
+                                  className="p-4 bg-gray-50 rounded-lg border border-gray-200"
+                                >
+                                  <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                                    <div>
+                                      <p className="font-medium text-gray-800">
+                                        {assignment.moduleName}
+                                      </p>
+                                      <p className="text-sm text-gray-600">
+                                        Instructor: {assignment.instructorName}
+                                      </p>
+                                    </div>
+                                    <div className="mt-2 md:mt-0">
+                                      <p className="text-sm text-gray-700">
+                                        <span className="font-medium">
+                                          Time:
+                                        </span>{" "}
+                                        {assignment.startTime} -{" "}
+                                        {assignment.endTime}
+                                      </p>
+                                      <p className="text-sm text-gray-700">
+                                        <span className="font-medium">
+                                          Location:
+                                        </span>{" "}
+                                        {assignment.location}
+                                      </p>
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                            ))
-                          }
+                              ))}
+                          </div>
                         </div>
-                      </div>
-                    )
-                  ))}
+                      )
+                  )}
                 </div>
               ) : (
                 <div className="text-center py-8 text-gray-500">
@@ -372,7 +430,8 @@ const CourseGroupTimetable = () => {
               Select a course and group to view timetable
             </h3>
             <p className="text-gray-500">
-              Choose a course and group from the dropdowns above to see the schedule
+              Choose a course and group from the dropdowns above to see the
+              schedule
             </p>
           </div>
         )}

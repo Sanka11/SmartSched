@@ -23,38 +23,53 @@ public class UserService {
 
     // ✅ Register a new user
     public User registerUser(User user) {
-        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
-            throw new RuntimeException("Email already registered");
-        }
-
-        if (user.getRole() == null) {
-            user.setRole("user");
-        }
-
-        if (user.getPermissions() == null) {
-            user.setPermissions(List.of("read"));
-        }
-
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        User savedUser = userRepository.save(user);
-
-        // Send welcome email
-        emailService.sendRegistrationEmail(savedUser.getEmail(), savedUser.getFullName());
-
-        return savedUser;
+    if (userRepository.findByEmail(user.getEmail()).isPresent()) {
+        throw new RuntimeException("Email already registered");
     }
+
+    if (user.getRole() == null) {
+        user.setRole("user");
+    }
+
+    if (user.getPermissions() == null) {
+        user.setPermissions(List.of("read"));
+    }
+
+    // 👇 TEMP LOGGING TO SEE WHAT PASSWORD IS SAVED
+    System.out.println("Original raw password: " + user.getPassword());
+    String encodedPassword = passwordEncoder.encode(user.getPassword());
+    System.out.println("Encoded password: " + encodedPassword);
+
+    user.setPassword(encodedPassword);
+
+    User savedUser = userRepository.save(user);
+
+    // Send welcome email
+    emailService.sendRegistrationEmail(savedUser.getEmail(), savedUser.getFullName());
+
+    return savedUser;
+}
+
 
     // ✅ Login (authentication)
     public User authenticateUser(String email, String rawPassword) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    System.out.println("Login attempt for email: " + email);
+    System.out.println("Raw password input: " + rawPassword);
 
-        if (!passwordEncoder.matches(rawPassword, user.getPassword())) {
-            throw new RuntimeException("Invalid credentials");
-        }
+    User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("User not found"));
 
-        return user;
+    System.out.println("Encoded password stored: " + user.getPassword());
+
+    if (!passwordEncoder.matches(rawPassword, user.getPassword())) {
+        System.out.println("Password mismatch");
+        throw new RuntimeException("Invalid credentials");
     }
+
+    System.out.println("Password matched successfully!");
+    return user;
+}
+
 
     // ✅ Update password
     public boolean updatePassword(String email, String newPassword) {
