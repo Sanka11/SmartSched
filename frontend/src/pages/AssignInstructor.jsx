@@ -32,6 +32,7 @@ const AssignInstructor = () => {
   const [classToDelete, setClassToDelete] = useState("");
   const [deleteAction, setDeleteAction] = useState(""); // 'module' or 'class'
   const [isLoading, setIsLoading] = useState(true);
+  const token = localStorage.getItem("token");
 
   // Fetch users and instructors on component mount
   useEffect(() => {
@@ -150,6 +151,7 @@ const AssignInstructor = () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             firstName: firstName,
@@ -190,6 +192,10 @@ const AssignInstructor = () => {
         `http://localhost:8080/api/instructors/${instructor.email}/assignModule/${moduleTitle}`,
         {
           method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`, // ✅ ADD THIS
+          },
         }
       )
         .then((res) => res.json())
@@ -248,6 +254,7 @@ const AssignInstructor = () => {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ groupName }),
       }
@@ -302,6 +309,10 @@ const AssignInstructor = () => {
         `http://localhost:8080/api/instructors/${selectedUser.email}/deleteModule/${moduleToDelete}`,
         {
           method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`, // ✅ ADD THIS
+          },
         }
       )
         .then(() => {
@@ -337,6 +348,10 @@ const AssignInstructor = () => {
         `http://localhost:8080/api/instructors/${selectedUser.email}/deleteClass/${moduleToDelete}/${classToDelete}`,
         {
           method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`, // ✅ ADD THIS
+          },
         }
       )
         .then(() => {

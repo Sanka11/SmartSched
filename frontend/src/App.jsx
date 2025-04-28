@@ -68,6 +68,7 @@ function App() {
       <Route path="/update-event/:eventId" element={<EventForm />} />{" "}
       <Route path="/eventcourse" element={<CreateEventCourse />} />
       <Route path="/forgot-password" element={<UpdatePassword />} />
+      <Route path="/locations" element={<LocationManager />} />
       <Route
         path="/generate-reports-assign"
         element={<GenerateReportAssignManager />}

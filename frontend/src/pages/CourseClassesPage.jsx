@@ -21,6 +21,7 @@ const CourseClassesPage = () => {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [groupDetails, setGroupDetails] = useState({});
   const [allAssignments, setAllAssignments] = useState([]);
+  const token = localStorage.getItem("token");
 
   const days = [
     "Monday",
@@ -259,6 +260,10 @@ const CourseClassesPage = () => {
           `http://localhost:8080/api/allClassAssignments/${details.id}`,
           {
             method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`, // ✅ ADD
+            },
           }
         );
       }
@@ -285,6 +290,7 @@ const CourseClassesPage = () => {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify(data),
           }
@@ -306,8 +312,18 @@ const CourseClassesPage = () => {
 
       fetchExistingGroupDetails(course);
       const assignmentsResponse = await fetch(
-        "http://localhost:8080/api/allClassAssignments"
+        "http://localhost:8080/api/allClassAssignments",
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`, // ✅ Must add this
+          },
+        }
       );
+
+      if (!assignmentsResponse.ok) {
+        throw new Error("Failed to fetch updated assignments");
+      }
       setAllAssignments(await assignmentsResponse.json());
     } catch (err) {
       console.error("Error saving/updating data:", err);
@@ -327,6 +343,10 @@ const CourseClassesPage = () => {
         `http://localhost:8080/api/allClassAssignments/${details.id}`,
         {
           method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`, // ✅ ADD
+          },
         }
       );
 
@@ -339,8 +359,18 @@ const CourseClassesPage = () => {
       if (selectedCourse) fetchExistingGroupDetails(selectedCourse);
 
       const assignmentsResponse = await fetch(
-        "http://localhost:8080/api/allClassAssignments"
+        "http://localhost:8080/api/allClassAssignments",
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`, // ✅ Add Authorization header
+          },
+        }
       );
+
+      if (!assignmentsResponse.ok) {
+        throw new Error("Failed to fetch updated assignments");
+      }
       setAllAssignments(await assignmentsResponse.json());
     } catch (err) {
       console.error("Error deleting assignment:", err);

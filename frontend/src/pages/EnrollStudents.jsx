@@ -195,13 +195,13 @@ const StudentEnrollment = () => {
       return;
     }
 
-    // Check if the user is already a student
+    const token = localStorage.getItem("token"); // ✅ must get token
+
     let student = students.find(
       (student) => student.email === selectedUser.email
     );
 
     if (!student) {
-      // If not, create a new student enrollment record
       try {
         const nameParts = selectedUser.fullName.split(" ");
         const firstName = nameParts[0] || "";
@@ -216,6 +216,9 @@ const StudentEnrollment = () => {
             courses: [courseName],
             courseClasses: { [courseName]: "" },
             courseModules: { [courseName]: [] },
+          },
+          {
+            headers: { Authorization: `Bearer ${token}` },
           }
         );
 
@@ -226,7 +229,6 @@ const StudentEnrollment = () => {
           courseModules: response.data.courseModules || { [courseName]: [] },
         };
 
-        // Update state
         setStudents([...students, newStudent]);
         setSelectedUser(newStudent);
         await fetchGroupsForCourse(courseName);
@@ -236,18 +238,20 @@ const StudentEnrollment = () => {
         toast.error("Failed to enroll in course");
       }
     } else {
-      // Check if the course is already assigned
       if (student.courses.includes(courseName)) {
-        toast.warning(
-          `Course "${courseName}" is already assigned to the student.`
-        );
+        toast.warning(`Course "${courseName}" is already assigned.`);
         return;
       }
 
       try {
         const response = await axios.post(
-          `http://localhost:8080/api/student-enrollments/${student.id}/courses?courseName=${courseName}`
+          `http://localhost:8080/api/student-enrollments/${student.id}/courses?courseName=${courseName}`,
+          {},
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
         );
+
         const updatedStudent = {
           ...response.data,
           fullName: response.data.firstName + " " + response.data.lastName,
@@ -276,10 +280,16 @@ const StudentEnrollment = () => {
 
   // Handle course removal with confirmation
   const handleRemoveCourse = async (courseName) => {
+    const token = localStorage.getItem("token");
+
     try {
       const response = await axios.delete(
-        `http://localhost:8080/api/student-enrollments/${selectedUser.id}/courses/${courseName}`
+        `http://localhost:8080/api/student-enrollments/${selectedUser.id}/courses/${courseName}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
       );
+
       const updatedStudent = {
         ...response.data,
         fullName: response.data.firstName + " " + response.data.lastName,
@@ -292,7 +302,6 @@ const StudentEnrollment = () => {
         students.map((s) => (s.id === updatedStudent.id ? updatedStudent : s))
       );
 
-      // Remove groups for this course
       setGroups((prev) => {
         const newGroups = { ...prev };
         delete newGroups[courseName];
@@ -313,9 +322,15 @@ const StudentEnrollment = () => {
       return;
     }
 
+    const token = localStorage.getItem("token");
+
     try {
       const response = await axios.put(
-        `http://localhost:8080/api/student-enrollments/${selectedUser.id}/courses/${courseName}/class?className=${groupId}`
+        `http://localhost:8080/api/student-enrollments/${selectedUser.id}/courses/${courseName}/class?className=${groupId}`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
       );
 
       if (response.status === 200) {
@@ -336,7 +351,6 @@ const StudentEnrollment = () => {
           students.map((s) => (s.id === updatedStudent.id ? updatedStudent : s))
         );
 
-        // Find the group name to display in the success message
         const group = (groups[courseName] || []).find(
           (g) => g.groupId === groupId
         );
@@ -371,18 +385,22 @@ const StudentEnrollment = () => {
       return;
     }
 
-    // Check if the module is already assigned for the selected course
+    const token = localStorage.getItem("token");
+
     if (selectedUser.courseModules[courseName]?.includes(moduleName)) {
-      toast.warning(
-        `Module "${moduleName}" is already assigned to the student for course "${courseName}".`
-      );
+      toast.warning(`Module "${moduleName}" is already assigned.`);
       return;
     }
 
     try {
       const response = await axios.post(
-        `http://localhost:8080/api/student-enrollments/${selectedUser.id}/courses/${courseName}/modules?moduleName=${moduleName}`
+        `http://localhost:8080/api/student-enrollments/${selectedUser.id}/courses/${courseName}/modules?moduleName=${moduleName}`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
       );
+
       const updatedStudent = {
         ...response.data,
         fullName: response.data.firstName + " " + response.data.lastName,
@@ -418,16 +436,20 @@ const StudentEnrollment = () => {
       return;
     }
 
+    const token = localStorage.getItem("token");
+
     try {
       const response = await axios.delete(
         `http://localhost:8080/api/student-enrollments/${
           selectedUser.id
         }/courses/${encodeURIComponent(
           courseName
-        )}/modules/${encodeURIComponent(moduleName)}`
+        )}/modules/${encodeURIComponent(moduleName)}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
       );
 
-      // Create updated student object
       const updatedStudent = {
         ...selectedUser,
         courseModules: {
