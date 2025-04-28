@@ -227,16 +227,23 @@ function AllCourseAndModules() {
       return;
     }
 
+    const token = localStorage.getItem("token"); // <--- GET TOKEN FROM LOCAL STORAGE
+
     try {
       if (editingCourseId) {
         await axios.put(
           `http://localhost:8080/api/allcourses/${editingCourseId}`,
-          { ...course, id: editingCourseId }
+          { ...course, id: editingCourseId },
+          {
+            headers: { Authorization: `Bearer ${token}` }, // <--- ADD TOKEN HERE
+          }
         );
         toast.success("Course updated successfully!");
       } else {
         const { id, ...newCourse } = course;
-        await axios.post("http://localhost:8080/api/allcourses", newCourse);
+        await axios.post("http://localhost:8080/api/allcourses", newCourse, {
+          headers: { Authorization: `Bearer ${token}` }, // <--- ADD TOKEN HERE TOO
+        });
         toast.success("Course created successfully!");
       }
       await fetchCourses();
@@ -262,9 +269,17 @@ function AllCourseAndModules() {
 
     setIsDeleting(true);
     setError(null);
+
+    const token = localStorage.getItem("token"); // ✅ GET token first
+
     try {
-      await axios.delete(`http://localhost:8080/api/allcourses/${courseId}`);
-      // Update state immediately without waiting for refetch
+      await axios.delete(`http://localhost:8080/api/allcourses/${courseId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`, // ✅ Send token here!
+        },
+      });
+
+      // Update UI immediately
       setCourses((prev) => prev.filter((c) => c.id !== courseId));
       toast.success("Course deleted successfully");
     } catch (err) {
@@ -543,7 +558,6 @@ function AllCourseAndModules() {
                             ? "e.g., React Fundamentals"
                             : "Brief module description (optional)"
                         }
-                        required={field === "title"}
                       />
                     </div>
                   ))}

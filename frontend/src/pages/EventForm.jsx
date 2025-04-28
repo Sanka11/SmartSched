@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import axios from "axios";
 import { FiSave, FiArrowLeft } from "react-icons/fi";
+import api from "../services/api"; // ✅ Correct
+import Swal from "sweetalert2";
 
 const EventForm = () => {
   const { eventId } = useParams();
@@ -20,8 +21,10 @@ const EventForm = () => {
 
   useEffect(() => {
     if (eventId) {
-      axios
-        .get(`http://localhost:8080/api/events/${eventId}`)
+      api
+        .get(`/api/events/${eventId}`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        })
         .then((response) => {
           setEvent(response.data);
         })
@@ -53,19 +56,20 @@ const EventForm = () => {
     setLoading(true);
     try {
       if (eventId) {
-        await axios.put(
-          `http://localhost:8080/api/events/update/${eventId}`,
-          event
-        );
-        alert("Event updated successfully!");
+        await api.put(`/api/events/update/${eventId}`, event, {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        });
+        Swal.fire("Success", "Event updated successfully!", "success");
       } else {
-        await axios.post("http://localhost:8080/api/events/add", event);
-        alert("Event created successfully!");
+        await api.post("/api/events/add", event, {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        });
+        Swal.fire("Success", "Event created successfully!", "success");
       }
       navigate("/eventlist");
     } catch (error) {
       console.error("Error saving event:", error);
-      alert("Error saving event. Please try again.");
+      Swal.fire("Error", "Error saving event. Please try again.", "error");
     } finally {
       setLoading(false);
     }

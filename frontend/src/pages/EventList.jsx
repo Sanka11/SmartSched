@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../services/api";
 import { useNavigate } from "react-router-dom";
 import { FaEdit, FaTrashAlt, FaEye, FaCalendarAlt } from "react-icons/fa";
 import {
@@ -48,6 +48,8 @@ const EventListPage = () => {
     doc.save("Event_Report.pdf");
   };
 
+  const token = localStorage.getItem("token");
+
   useEffect(() => {
     fetchEvents();
   }, []);
@@ -66,12 +68,8 @@ const EventListPage = () => {
   const fetchEvents = () => {
     const token = localStorage.getItem("token"); // Important!
 
-    axios
-      .get("http://localhost:8080/api/events/all", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
+    api
+      .get("/api/events/all", { headers: { Authorization: `Bearer ${token}` } })
       .then((response) => {
         setEvents(response.data);
         setFilteredEvents(response.data);
@@ -82,9 +80,9 @@ const EventListPage = () => {
   const handleDelete = async (eventId) => {
     if (window.confirm("Are you sure you want to delete this event?")) {
       try {
-        await axios.delete(
-          `http://localhost:8080/api/events/delete/${eventId}`
-        );
+        await api.delete(`/api/events/delete/${eventId}`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        });
         alert("Event deleted successfully!");
         fetchEvents();
       } catch (error) {

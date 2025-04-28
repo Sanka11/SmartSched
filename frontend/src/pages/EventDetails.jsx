@@ -1,23 +1,35 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../services/api";
 import { useParams } from "react-router-dom";
-import { FaCalendarAlt, FaClock, FaMapMarkerAlt, FaUsers, FaInfoCircle } from "react-icons/fa";
+import {
+  FaCalendarAlt,
+  FaClock,
+  FaMapMarkerAlt,
+  FaUsers,
+  FaInfoCircle,
+} from "react-icons/fa";
 
 const EventDetails = () => {
   const [event, setEvent] = useState(null);
+  const [loading, setLoading] = useState(true); // ✅ move inside
+  const [error, setError] = useState(null); // ✅ move inside
   const { eventId } = useParams();
 
   useEffect(() => {
     const fetchEvent = async () => {
       try {
-        const response = await axios.get(
-          `http://localhost:8080/api/events/${eventId}`
-        );
+        const response = await api.get(`/api/events/${eventId}`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        });
         setEvent(response.data);
+        setLoading(false);
       } catch (error) {
         console.error("Error fetching event details:", error);
+        setError("Failed to load event details.");
+        setLoading(false);
       }
     };
+
     fetchEvent();
   }, [eventId]);
 
@@ -78,7 +90,8 @@ const EventDetails = () => {
                 {/* Event Mode */}
                 <div className="border-b border-gray-700 pb-4">
                   <div className="flex items-center text-lg">
-                    <div className="w-5 mr-3"></div> {/* Spacer for alignment */}
+                    <div className="w-5 mr-3"></div>{" "}
+                    {/* Spacer for alignment */}
                     <div>
                       <span className="font-semibold text-gray-300">Mode:</span>{" "}
                       <span className="text-gray-200">{event.eventMode}</span>
@@ -94,7 +107,9 @@ const EventDetails = () => {
                   <div className="flex items-center text-lg">
                     <FaMapMarkerAlt className="text-blue-400 mr-3" />
                     <div>
-                      <span className="font-semibold text-gray-300">Location:</span>{" "}
+                      <span className="font-semibold text-gray-300">
+                        Location:
+                      </span>{" "}
                       <span className="text-gray-200">{event.location}</span>
                     </div>
                   </div>
@@ -105,8 +120,12 @@ const EventDetails = () => {
                   <div className="flex items-center text-lg">
                     <FaUsers className="text-blue-400 mr-3" />
                     <div>
-                      <span className="font-semibold text-gray-300">Organizing Committee:</span>{" "}
-                      <span className="text-gray-200">{event.orgCommittee}</span>
+                      <span className="font-semibold text-gray-300">
+                        Organizing Committee:
+                      </span>{" "}
+                      <span className="text-gray-200">
+                        {event.orgCommittee}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -121,7 +140,9 @@ const EventDetails = () => {
                   <h3 className="text-xl font-semibold text-gray-300 mb-2">
                     Description
                   </h3>
-                  <p className="text-gray-300 whitespace-pre-line">{event.description}</p>
+                  <p className="text-gray-300 whitespace-pre-line">
+                    {event.description}
+                  </p>
                 </div>
               </div>
             </div>
