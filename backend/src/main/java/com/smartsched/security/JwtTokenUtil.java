@@ -3,16 +3,24 @@ package com.smartsched.security;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
+import java.util.Base64;
 import java.util.Date;
 
 @Component
 public class JwtTokenUtil {
 
-    private final Key key = Keys.secretKeyFor(SignatureAlgorithm.HS512); // Automatically generates secure key
+    private final Key key;
     private final long jwtExpiration = 86400000; // 1 day
+
+    public JwtTokenUtil(@Value("${jwt.secret}") String secret) {
+        // Decode base64 string from properties
+        byte[] decodedKey = Base64.getDecoder().decode(secret);
+        this.key = Keys.hmacShaKeyFor(decodedKey);
+    }
 
     public String generateToken(String email, String role) {
         return Jwts.builder()
@@ -25,11 +33,15 @@ public class JwtTokenUtil {
     }
 
     public String getEmailFromToken(String token) {
-        return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody().getSubject();
+        return Jwts.parserBuilder().setSigningKey(key).build()
+                .parseClaimsJws(token)
+                .getBody().getSubject();
     }
 
     public String getRoleFromToken(String token) {
-        return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody().get("role", String.class);
+        return Jwts.parserBuilder().setSigningKey(key).build()
+                .parseClaimsJws(token)
+                .getBody().get("role", String.class);
     }
 
     public boolean validateToken(String token) {

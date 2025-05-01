@@ -67,16 +67,17 @@ public ResponseEntity<?> loginUser(@RequestBody Map<String, String> loginRequest
 
 
     // ✅ Get all users (Admin + Superadmin only)
-    @GetMapping
-    @PreAuthorize("@customSecurity.checkUserRoles(authentication, 'admin', 'superadmin', 'user manager', 'assignment manager')")
-    public ResponseEntity<?> getAllUsers() {
-        try {
-            List<User> users = userService.getAllUsers();
-            return new ResponseEntity<>(users, HttpStatus.OK);
-        } catch (RuntimeException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+   @GetMapping
+@PreAuthorize("@customSecurity.checkUserRoles(authentication, 'admin', 'superadmin', 'user manager', 'assignment manager')")
+public ResponseEntity<?> getAllUsers() {
+    try {
+        List<User> users = userService.getAllUsersWithGroups(); // ✅ Fix here
+        return new ResponseEntity<>(users, HttpStatus.OK);
+    } catch (RuntimeException e) {
+        return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
+}
+
 
     // ✅ Get user by ID (All roles)
     @GetMapping("/{id}")

@@ -38,7 +38,8 @@ public class ScheduleService {
         Set<String> groupIds = new HashSet<>(student.getCourseClasses().values());
 
         GeneratedSchedule latestSchedule = scheduleRepo
-                .findTopByGeneratedByAndTimetableNotNullOrderByGeneratedAtDesc(email);
+    .findTopByUserEmailAndTimetableNotNullOrderByGeneratedAtDesc(email);
+
 
         if (latestSchedule == null || latestSchedule.getTimetable() == null) {
             return Collections.singletonMap("timetable", new ArrayList<>());
@@ -72,7 +73,7 @@ public class ScheduleService {
         String instructorId = String.valueOf(instructor.getId());
 
         GeneratedSchedule latestSchedule = scheduleRepo
-                .findTopByGeneratedByAndTimetableNotNullOrderByGeneratedAtDesc(email);
+    .findTopByUserEmailAndTimetableNotNullOrderByGeneratedAtDesc(email);
 
         if (latestSchedule == null || latestSchedule.getTimetable() == null) {
             return Collections.singletonMap("timetable", new ArrayList<>());
@@ -92,4 +93,6 @@ public class ScheduleService {
 
         return Collections.singletonMap("timetable", filtered);
     }
+
+    
 }

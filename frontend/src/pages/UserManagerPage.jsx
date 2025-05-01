@@ -42,11 +42,14 @@ const UserManagerPage = () => {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
+      console.log("Fetched users:", response.data);
 
       const usersWithPermissions = response.data.map((user) => ({
         ...user,
+        id: user._id, // 🔥 Fixes the undefined `id`
         permissions: user.permissions || [],
       }));
+
       setUsers(usersWithPermissions);
     } catch (error) {
       console.error("Error fetching users:", error);

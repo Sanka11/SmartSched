@@ -19,4 +19,11 @@ public class TimetableController {
     public List<Map<String, Object>> getUserTimetable(@PathVariable String userId) {
         return timetableService.getTimetableForUser(userId);
     }
+
+    @GetMapping("/student/{email}")
+public Map<String, Object> getStudentTimetable(@PathVariable String email) {
+    return timetableService.getStudentScheduleWithMetadata(email);
+}
+
+
 }

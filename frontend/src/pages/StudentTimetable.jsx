@@ -3,12 +3,27 @@ import axios from "axios";
 import html2pdf from "html2pdf.js";
 import DynamicSidebar from "../components/DynamicSidebar";
 
-const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const days = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "TBD",
+];
 
 const colors = [
-  "bg-blue-100", "bg-red-100", "bg-green-100", "bg-yellow-100",
-  "bg-purple-100", "bg-pink-100", "bg-orange-100", "bg-cyan-100",
-  "bg-teal-100", "bg-indigo-100"
+  "bg-blue-100",
+  "bg-red-100",
+  "bg-green-100",
+  "bg-yellow-100",
+  "bg-purple-100",
+  "bg-pink-100",
+  "bg-orange-100",
+  "bg-cyan-100",
+  "bg-teal-100",
+  "bg-indigo-100",
 ];
 
 const StudentTimetable = () => {
@@ -20,24 +35,40 @@ const StudentTimetable = () => {
 
   const user = JSON.parse(localStorage.getItem("user"));
   const email = user?.email;
+  const token = localStorage.getItem("token");
 
   const fetchTimetable = async () => {
+    if (!email || !token) {
+      setError("🔐 User not authenticated. Please log in again.");
+      return;
+    }
+
     setLoading(true);
+    setError("");
+    setMessage("");
+
     try {
       const response = await axios.get(
-        `${import.meta.env.VITE_BACKEND_URL}/api/timetable/student/${email}`
+        `${
+          import.meta.env.VITE_BACKEND_URL
+        }/api/timetable/student/${encodeURIComponent(email)}`,
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-      const data = response.data?.timetable || [];
-      setTimetable(data);
 
-      if (data.length === 0) {
-        setError("You are not yet assigned to any modules.");
+      const result = response.data || {};
+      const sessions = result.timetable || [];
+
+      console.log("✅ Loaded timetable sessions:", sessions);
+      setTimetable(sessions);
+
+      if (sessions.length === 0) {
+        setError("⚠️ You are not yet assigned to any modules.");
       } else {
         setError("");
       }
     } catch (err) {
-      console.error("Failed to fetch timetable", err);
-      setError("❌ Failed to fetch timetable.");
+      console.error("❌ Failed to fetch timetable:", err);
+      setError("❌ Failed to fetch timetable from server.");
     } finally {
       setLoading(false);
     }
@@ -50,19 +81,19 @@ const StudentTimetable = () => {
 
     try {
       const response = await axios.get(
-        `${import.meta.env.VITE_BACKEND_URL}/api/scheduler/generate?email=${email}&role=student`
+        `${
+          import.meta.env.VITE_BACKEND_URL
+        }/api/scheduler/generate?email=${email}&role=student`,
+        { headers: { Authorization: `Bearer ${token}` } }
       );
+
       const msg = response.data;
 
       if (msg.includes("❌ No valid sessions")) {
         setMessage("");
         setError("You are not yet assigned to any modules.");
         setTimetable([]);
-        setGenerating(false);
-        return;
-      }
-
-      if (msg.includes("✅")) {
+      } else if (msg.includes("✅")) {
         setTimeout(() => {
           fetchTimetable();
           setGenerating(false);
@@ -70,12 +101,12 @@ const StudentTimetable = () => {
         }, 3000);
       } else {
         setMessage(msg);
-        setGenerating(false);
       }
     } catch (err) {
       console.error("Error generating timetable", err);
       setMessage("");
       setError("❌ Failed to generate timetable.");
+    } finally {
       setGenerating(false);
     }
   };
@@ -87,17 +118,21 @@ const StudentTimetable = () => {
 
   const getSessionsByDay = (day) =>
     timetable
-      .filter((session) => session.day === day)
+      .filter((s) => (s.day || "").toLowerCase() === day.toLowerCase())
       .sort((a, b) => a.start_time.localeCompare(b.start_time));
 
   useEffect(() => {
-    fetchTimetable();
+    if (token && email) {
+      fetchTimetable();
+    } else {
+      setError("User not authenticated. Please log in again.");
+    }
   }, []);
 
   const moduleColorMap = {};
   let colorIndex = 0;
   timetable.forEach((session) => {
-    const module = session.module_name;
+    const module = session.module_name || "Unknown Module";
     if (!moduleColorMap[module]) {
       moduleColorMap[module] = colors[colorIndex % colors.length];
       colorIndex++;
@@ -105,7 +140,7 @@ const StudentTimetable = () => {
   });
 
   const getSessionTypeIcon = (session) => {
-    const location = session.location.toLowerCase();
+    const location = session.location?.toLowerCase() || "";
     if (location.includes("lab")) return "🧪";
     if (location.includes("zoom") || location.includes("online")) return "💻";
     if (session.event) return "🎉";
@@ -117,7 +152,9 @@ const StudentTimetable = () => {
       <DynamicSidebar user={user} />
 
       <main className="flex-1 p-6">
-        <h1 className="text-2xl font-semibold mb-4">📅 Your Weekly Timetable</h1>
+        <h1 className="text-2xl font-semibold mb-4">
+          📅 Your Weekly Timetable
+        </h1>
 
         {loading ? (
           <p>Loading...</p>
@@ -169,7 +206,6 @@ const StudentTimetable = () => {
                   <tr>
                     {days.map((day) => {
                       const sessions = getSessionsByDay(day);
-
                       return (
                         <td
                           key={day}
@@ -177,23 +213,47 @@ const StudentTimetable = () => {
                         >
                           {sessions.length > 0 ? (
                             sessions.map((session, idx) => {
-                              const bgColor = moduleColorMap[session.module_name] || "bg-gray-100";
+                              const bgColor =
+                                moduleColorMap[session.module_name] ||
+                                "bg-gray-100";
                               return (
                                 <div
                                   key={idx}
-                                  className={`pb-2 px-2 py-1 rounded ${bgColor} ${idx !== sessions.length - 1 ? "border-b border-gray-200 mb-4" : ""}`}
+                                  className={`pb-2 px-2 py-1 rounded ${bgColor} ${
+                                    idx !== sessions.length - 1
+                                      ? "border-b border-gray-200 mb-4"
+                                      : ""
+                                  }`}
                                   title={`${session.module_name} • ${session.group_name} • ${session.location} • ${session.instructor_name}`}
                                 >
-                                  <strong>{getSessionTypeIcon(session)} {session.module_name}</strong><br />
-                                  {session.group_name}<br />
-                                  🕒 {session.start_time}–{session.end_time}<br />
-                                  🏫 {session.location}<br />
-                                  👨‍🏫 {session.instructor_name}
+                                  <strong>
+                                    {getSessionTypeIcon(session)}{" "}
+                                    {session.module_name || "Unnamed Module"}
+                                  </strong>
+                                  <br />
+                                  {session.group_name || "Group TBD"}
+                                  <br />
+                                  🕒 {session.start_time}–{session.end_time}
+                                  <br />
+                                  🏫 {session.location || "TBD"}
+                                  <br />
+                                  👨‍🏫 {session.instructor_name || "TBD"}
                                   {session.event && (
                                     <div className="mt-2 text-xs bg-gray-50 border p-1 rounded">
-                                      🎉 <strong>{session.event.eventName}</strong><br />
-                                      🗓 {new Date(session.event.eventDate).toLocaleDateString()} {new Date(session.event.eventTime).toLocaleTimeString()}<br />
-                                      📍 {session.event.eventMode} - {session.event.location}<br />
+                                      🎉{" "}
+                                      <strong>{session.event.eventName}</strong>
+                                      <br />
+                                      🗓{" "}
+                                      {new Date(
+                                        session.event.eventDate
+                                      ).toLocaleDateString()}{" "}
+                                      {new Date(
+                                        session.event.eventTime
+                                      ).toLocaleTimeString()}
+                                      <br />
+                                      📍 {session.event.eventMode} -{" "}
+                                      {session.event.location}
+                                      <br />
                                       📝 {session.event.description}
                                     </div>
                                   )}

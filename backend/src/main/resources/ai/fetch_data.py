@@ -1,9 +1,8 @@
 from pymongo import MongoClient
 import os
 from dotenv import load_dotenv
-from datetime import datetime, date, time, timedelta
+from datetime import datetime, date, time as dt_time
 from bson import tz_util
-
 
 # === Load environment variables ===
 load_dotenv()
@@ -19,54 +18,62 @@ users = db["users"]
 student_enrollments = db["student_enrollments"]
 instructor_assignments = db["instructor_assignments"]
 events = db["events"]
+modules = db["modules"]
+courses = db["courses"]
 
 # === Fetch matching event for a session ===
 def fetch_event_for_session(session_day, session_start):
     try:
-        mongo_weekday = datetime.strptime(session_day, "%A").isoweekday() % 7 + 1
+        ist = tz_util.FixedOffset(330, "IST")
+
+        # Parse session start time
         session_time = datetime.strptime(session_start, "%H:%M").time()
-        session_hour = session_time.hour
+        session_dt = datetime.combine(date.today(), session_time).replace(tzinfo=ist)
+        target_weekday = session_dt.weekday()
 
-        print(f"🔍 Searching for event on day: {session_day} (Mongo weekday={mongo_weekday}) at ~{session_time}")
+        # Fetch events that are today or in the future
+        today = datetime.now(tz_util.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        matching_events = events.find({"eventDate": {"$gte": today}})
 
-        today = datetime.combine(date.today(), time.min)
+        for event in matching_events:
+            event_date = event.get("eventDate")
+            event_time = event.get("eventTime")
+            if not event_date or not event_time:
+                continue
 
-        event = events.find_one({
-            "$expr": {
-                "$and": [
-                    {"$eq": [{"$dayOfWeek": "$eventDate"}, mongo_weekday]},
-                    {"$gte": [{"$hour": "$eventDate"}, session_hour - 1]},
-                    {"$lte": [{"$hour": "$eventDate"}, session_hour + 1]}
-                ]
-            },
-            "eventDate": {"$gte": today}
-        })
+            event_local_dt = event_date.astimezone(ist)
+            event_time_only = event_time.astimezone(ist).time()
+            event_weekday = event_local_dt.weekday()
 
-        if event:
-            print(f"✅ Matching event found: {event.get('eventName')} at {event.get('eventTime')}")
-            return {
-                "eventName": event.get("eventName"),
-                "eventDate": event.get("eventDate"),
-                "eventTime": event.get("eventTime"),
-                "eventMode": event.get("eventMode"),
-                "location": event.get("location"),
-                "description": event.get("description")
-            }
+            # Compare weekday and time
+            weekday_match = event_weekday == target_weekday
+            delta_seconds = abs((datetime.combine(date.today(), event_time_only) - session_dt.replace(tzinfo=None)).total_seconds())
+
+            print(f"🔍 Trying event: {event.get('eventName')} | Event weekday: {event_weekday} | Target: {target_weekday} | Match: {weekday_match} | Time diff: {delta_seconds} sec")
+
+            if weekday_match and delta_seconds <= 3600:
+                print(f"✅ Matched Event: {event.get('eventName')} for session at {session_start}")
+                return {
+                    "eventName": event.get("eventName"),
+                    "eventDate": event.get("eventDate"),
+                    "eventTime": event.get("eventTime"),
+                    "eventMode": event.get("eventMode"),
+                    "location": event.get("location"),
+                    "description": event.get("description")
+                }
 
     except Exception as e:
         print("⚠️ Error fetching event:", e)
 
     return None
 
-# === Fetch all class sessions for user based on role ===
+# === Fetch all class sessions and fill missing assigned modules ===
 def fetch_all_sessions(user_email=None, user_role=None):
     print("Fetching sessions from MongoDB...")
     print("Connected to DB:", db.name)
     print("Collections available:", db.list_collection_names())
 
     sessions = []
-
-    # 🧠 Validate user
     user = users.find_one({"email": user_email})
     if not user:
         print("❌ User not found.")
@@ -75,67 +82,73 @@ def fetch_all_sessions(user_email=None, user_role=None):
     print("User role:", user_role)
     query = {}
 
-    # 🧑‍🎓 Student role logic
     if user_role == "student":
         enrollment = student_enrollments.find_one({"email": user_email})
         if not enrollment:
             print("❌ Student enrollment not found.")
             return []
 
-        group_ids = list(enrollment.get("courseClasses", {}).values())
-        print("Student group IDs:", group_ids)
-        query = {"groupId": {"$in": group_ids}}
+        course_name = enrollment.get("courses", [])[0]
+        group_id = enrollment.get("courseClasses", {}).get(course_name)
+        assigned_modules = enrollment.get("courseModules", {}).get(course_name, [])
 
-    # 👨‍🏫 Instructor role logic
-    elif user_role == "lecturer":
-        assignment = instructor_assignments.find_one({"email": user_email})
-        if not assignment:
-            print("❌ Instructor assignment not found.")
-            return []
+        print("Student group ID:", group_id)
+        query = {"groupId": group_id}
+        results = list(allclassassignment.find(query))
 
-        instructor_id = str(assignment["_id"])
-        print("Instructor ID:", instructor_id)
-        query = {"instructorId": instructor_id}
+        used_modules = set()
+        for doc in results:
+            session = {
+                "course_id": doc.get("courseId"),
+                "course_name": doc.get("courseName"),
+                "module_id": doc.get("moduleId"),
+                "module_name": doc.get("moduleName"),
+                "group_id": doc.get("groupId"),
+                "group_name": doc.get("groupName"),
+                "instructor_id": doc.get("instructorId"),
+                "instructor_name": doc.get("instructorName"),
+                "location": doc.get("location"),
+                "day": doc.get("date"),
+                "start_time": doc.get("starttime"),
+                "end_time": doc.get("endtime"),
+                "event": fetch_event_for_session(doc.get("date"), doc.get("starttime"))
+            }
+            sessions.append(session)
+            used_modules.add(doc.get("moduleName"))
 
-    # 👤 Superadmin (user) sees all sessions
-    elif user_role == "user":
-        query = {}
+        # Fill remaining modules as free slots
+        for mod in assigned_modules:
+            if mod not in used_modules:
+                module_doc = modules.find_one({"moduleName": mod})
+                sessions.append({
+                    "course_id": "-",
+                    "course_name": course_name,
+                    "module_id": str(module_doc["_id"]) if module_doc else mod.replace(" ", "_").lower(),
+                    "module_name": mod,
+                    "group_id": "-",
+                    "group_name": "UNSCHEDULED",
+                    "instructor_id": "-",
+                    "instructor_name": "-",
+                    "location": "-",
+                    "day": "TBD",
+                    "start_time": "--",
+                    "end_time": "--",
+                    "event": None
+                })
 
-    else:
-        print("❌ Invalid user role.")
-        return []
-
-    # 🎯 Query sessions and attach event if found
-    results = allclassassignment.find(query)
-    for doc in results:
-        event_data = fetch_event_for_session(doc.get("date"), doc.get("starttime"))
-
-        session = {
-            "course_id": doc.get("courseId"),
-            "course_name": doc.get("courseName"),
-            "module_id": doc.get("moduleId"),
-            "module_name": doc.get("moduleName"),
-            "group_id": doc.get("groupId"),
-            "group_name": doc.get("groupName"),
-            "instructor_id": doc.get("instructorId"),
-            "instructor_name": doc.get("instructorName"),
-            "location": doc.get("location"),
-            "day": doc.get("date"),
-            "start_time": doc.get("starttime"),
-            "end_time": doc.get("endtime"),
-            "event": event_data
-        }
-        sessions.append(session)
-
-    print("Total sessions fetched:", len(sessions))
     return sessions
 
 # === Debug entry point ===
 def debug_fetch():
-    res = fetch_all_sessions("kanishka@gmail.com", "student")
+    res = fetch_all_sessions("thissa@gmail.com", "student")
     for r in res:
         print(r)
 
-# === Run when executed directly ===
+        from fetch_data import fetch_all_sessions
+sessions = fetch_all_sessions("thissa@gmail.com", "student")
+for s in sessions:
+    print(s["day"], s["start_time"], s["module_name"])
+
+
 if __name__ == "__main__":
     debug_fetch()
