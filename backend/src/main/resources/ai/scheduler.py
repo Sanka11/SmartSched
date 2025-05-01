@@ -44,7 +44,8 @@ def calculate_fitness(timetable):
     schedule_map = defaultdict(list)
 
     for session in timetable:
-        key = (session["day"], session["start_time"], session["end_time"])
+        key = (session["module_id"], session["group_id"], session["day"], session["start_time"], session["end_time"])
+
         schedule_map[key].append(session)
 
     for sessions in schedule_map.values():
@@ -72,18 +73,18 @@ def assign_conflict_free_slots(sessions):
     for session in sessions:
         conflict = True
         attempts = 0
+        original_day = session["day"]  # ✅ Keep day fixed
 
         while conflict and attempts < 200:
-            day = random.choice(DAYS)
             start_idx = random.randint(0, len(HOURS) - 2)
             start_time = HOURS[start_idx]
             end_time = HOURS[start_idx + 1]
-            time_slot = (day, start_time, end_time)
+            time_slot = (original_day, start_time, end_time)
 
             if (time_slot not in student_occupied[session["group_id"]] and
                     time_slot not in instructor_occupied[session["instructor_id"]]):
 
-                session["day"] = day
+                session["day"] = original_day  # ✅ Keep day unchanged
                 session["start_time"] = start_time
                 session["end_time"] = end_time
 
@@ -94,6 +95,7 @@ def assign_conflict_free_slots(sessions):
             attempts += 1
 
     return sessions
+
 
 # === Generate Initial Population ===
 def generate_population(base_sessions):
@@ -145,6 +147,18 @@ def run_genetic_algorithm(user_email, user_role):
     if not base_sessions:
         print("❌ No valid sessions found. Skipping.")
         return
+    
+    course_set = set()
+    for session in base_sessions:
+        course = session.get("course_name", "UNKNOWN")
+        module = session.get("module_name", "UNKNOWN")
+        group = session.get("group_name", "UNKNOWN")
+        instructor = session.get("instructor_name", "UNKNOWN")
+        course_set.add(f"{course} → {module} (Group: {group}, Instructor: {instructor})")
+
+    print(f"\n📘 Courses involved for {user_email}:")
+    for course in sorted(course_set):
+        print(f"   - {course}")
 
     population = generate_population(base_sessions)
     best_fitness = float("inf")
@@ -194,15 +208,20 @@ def save_all_schedules(user_email, sorted_population):
 
 # === Save Best Schedule ===
 def save_best_schedule(user_email, schedule, batch_id, base_sessions):
+    from bson import ObjectId
+
+    # Build event lookup map using a unique key for each session
     session_map = {
-        (s["day"], s["start_time"], s["module_id"]): s.get("event")
+        (s["module_id"], s["group_id"], s["day"], s["start_time"]): s.get("event")
         for s in base_sessions
+        if s.get("event") is not None
     }
 
     enriched_schedule = []
     for s in schedule:
-        key = (s["day"], s["start_time"], s["module_id"])
-        s["event"] = session_map.get(key)
+        key = (s["module_id"], s["group_id"], s["day"], s["start_time"])
+        s["event"] = session_map.get(key)  # attach matching event (if any)
+        s["className"] = s.get("group_id", "UNKNOWN")  # for frontend table logic
         enriched_schedule.append(s)
 
     result = {
@@ -213,8 +232,10 @@ def save_best_schedule(user_email, schedule, batch_id, base_sessions):
         "generatedAt": datetime.now(timezone.utc),
         "timetable": enriched_schedule
     }
+
     inserted = generated_schedules.insert_one(result)
     print(f"✅ Best schedule saved for {user_email} | ID: {inserted.inserted_id}")
+
 
 # === Role Detection from MongoDB ===
 def get_user_role(email):

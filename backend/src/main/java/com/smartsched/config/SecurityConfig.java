@@ -42,6 +42,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/users/login", "/api/users/register", "/api/users/forgot-password").permitAll()
                 .requestMatchers("/api/schedule/**", "/api/custom-schedule/**", "/api/timetable/**").permitAll()
+                .requestMatchers("/api/schedule/generate/bulk").hasRole("SUPERADMIN")
+
                 .anyRequest().authenticated()
             );
 

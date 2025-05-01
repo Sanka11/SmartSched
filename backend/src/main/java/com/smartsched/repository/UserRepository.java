@@ -9,5 +9,6 @@ import java.util.Optional;
 public interface UserRepository extends MongoRepository<User, String> {
     Optional<User> findByEmail(String email);
     List<User> findAll(); 
+    List<User> findByGroupName(String groupName);
     // Method to find a user by email
 }

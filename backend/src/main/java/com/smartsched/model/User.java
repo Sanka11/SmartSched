@@ -1,23 +1,30 @@
 package com.smartsched.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.util.List;
 
-@Document(collection = "users") // Maps this class to the "users" collection in MongoDB
+@Document(collection = "users")
 public class User {
 
     @Id
-    private String id; // MongoDB auto-generates an ID for each document
-    private String fullName; // Updated from 'name' to 'fullName'
-    private String email;
-    private String password; // Added password field
-    private String contact; // Added contact field
-    private String role; // Added role field
-    private List<String> permissions; // Added permissions field
+    @JsonProperty("_id") // 👈 This ensures JSON field becomes "_id"
+    private String id;
 
-    // Constructors
+    private String fullName;
+    private String email;
+    private String password;
+    private String contact;
+    private String role;
+    private List<String> permissions;
+
+    @Field("groupName") // optional, helpful for MongoDB mapping
+private String groupName;
+
+
     public User() {
     }
 
@@ -30,7 +37,6 @@ public class User {
         this.permissions = permissions;
     }
 
-    // Getters & Setters
     public String getId() {
         return id;
     }
@@ -86,4 +92,13 @@ public class User {
     public void setPermissions(List<String> permissions) {
         this.permissions = permissions;
     }
+
+    public String getGroupName() {
+    return groupName;
+}
+
+public void setGroupName(String groupName) {
+    this.groupName = groupName;
+}
+
 }

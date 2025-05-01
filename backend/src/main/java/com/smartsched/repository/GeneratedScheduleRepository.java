@@ -11,7 +11,8 @@ import org.springframework.stereotype.Repository;
 public interface GeneratedScheduleRepository extends MongoRepository<GeneratedSchedule, String> {
 
     // Fetch the most recent schedule for a specific user
-    GeneratedSchedule findTopByGeneratedByAndTimetableNotNullOrderByGeneratedAtDesc(String generatedBy);
+    GeneratedSchedule findTopByUserEmailAndTimetableNotNullOrderByGeneratedAtDesc(String email);
+
 
     List<GeneratedSchedule> findByUserEmailIn(List<String> emails);
 }

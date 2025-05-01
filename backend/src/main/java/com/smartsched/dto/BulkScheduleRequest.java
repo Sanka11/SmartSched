@@ -5,6 +5,7 @@ import java.util.List;
 public class BulkScheduleRequest {
     private List<String> emails;
     private String role;
+    private String groupName; // ✅ NEW FIELD
 
     public List<String> getEmails() {
         return emails;
@@ -20,5 +21,13 @@ public class BulkScheduleRequest {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public String getGroupName() {
+        return groupName;
+    }
+
+    public void setGroupName(String groupName) {
+        this.groupName = groupName;
     }
 }

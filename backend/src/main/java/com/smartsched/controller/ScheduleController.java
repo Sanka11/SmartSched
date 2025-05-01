@@ -21,10 +21,10 @@ public class ScheduleController {
     @Autowired
     private ScheduleService scheduleService;
 
-    @GetMapping("/student/{email}")
+    {/*@GetMapping("/student/{email}")
     public Map<String, List<Map<String, Object>>> getStudentTimetable(@PathVariable String email) {
         return scheduleService.getScheduleForStudent(email);
-    }
+}*/}
 
     @GetMapping("/instructor/{email}")
     public Map<String, List<Map<String, Object>>> getInstructorTimetable(@PathVariable String email) {

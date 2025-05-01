@@ -7,7 +7,7 @@ import java.io.InputStreamReader;
 @Service
 public class AISchedulingService {
 
-    private static final String PYTHON_VENV = "/Users/pramodravisanka/Documents/Year 3 Semester 2/ITPM/smartsched/backend/src/main/resources/ai/venv/bin/python3";
+    private static final String PYTHON_VENV = "venv/bin/python3";
     private static final String SCRIPT_PATH = "src/main/resources/ai/scheduler.py";
 
     public String generateSchedule(String email, String role) {

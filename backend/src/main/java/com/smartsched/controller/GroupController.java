@@ -1,6 +1,7 @@
 package com.smartsched.controller;
 
 import com.smartsched.model.Group;
+import com.smartsched.repository.AllClassAssignmentRepository;
 import com.smartsched.model.Course;
 import com.smartsched.service.GroupService;
 import com.smartsched.service.CourseService;
@@ -20,6 +21,10 @@ public class GroupController {
 
     @Autowired
     private CourseService courseService;
+
+    @Autowired
+private AllClassAssignmentRepository allClassAssignmentRepository;
+
 
     // ✅ Create a group and associate it with a course
     @PostMapping("/{courseId}")
@@ -115,4 +120,11 @@ public class GroupController {
             return "Course not found!";
         }
     }
+
+    // ✅ Get distinct group names from AllClassAssignment collection
+@GetMapping("/from-classes")
+public List<String> getDistinctGroupsFromAllClassAssignments() {
+    return allClassAssignmentRepository.findDistinctGroupNames();
+}
+
 }

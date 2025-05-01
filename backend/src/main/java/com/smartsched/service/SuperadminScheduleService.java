@@ -20,21 +20,21 @@ public class SuperadminScheduleService {
     private final UserRepository userRepository;
     private final GeneratedScheduleRepository scheduleRepository;
 
-    private final String PYTHON_PATH = "src/main/resources/ai/venv/bin/python3";
+    private final String PYTHON_PATH = "venv/bin/python3"; // adjust if needed
     private final String SCRIPT_PATH = "src/main/resources/ai/scheduler.py";
 
     public SuperadminScheduleService(UserRepository userRepository,
-            GeneratedScheduleRepository scheduleRepository) {
+                                     GeneratedScheduleRepository scheduleRepository) {
         this.userRepository = userRepository;
         this.scheduleRepository = scheduleRepository;
     }
 
     public Map<String, Object> generateBulkSchedules(BulkScheduleRequest request) {
-        List<String> emails = request.getEmails();
+        List<String> emails = getTargetEmails(request);
         String role = request.getRole();
 
-        if (emails == null || emails.isEmpty()) {
-            throw new IllegalArgumentException("Email list cannot be empty.");
+        if (emails.isEmpty()) {
+            throw new IllegalArgumentException("No valid users found for bulk generation.");
         }
 
         try {
@@ -52,10 +52,9 @@ public class SuperadminScheduleService {
             processBuilder.redirectErrorStream(true);
             Process process = processBuilder.start();
 
-            // Read output
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String line;
             StringBuilder outputLog = new StringBuilder();
+            String line;
             while ((line = reader.readLine()) != null) {
                 outputLog.append(line).append("\n");
             }
@@ -76,8 +75,26 @@ public class SuperadminScheduleService {
     }
 
     public List<ConflictIssue> checkConflicts(BulkScheduleRequest request) {
-        List<String> emails = request.getEmails();
+        List<String> emails = getTargetEmails(request);
+        if (emails.isEmpty()) {
+            throw new IllegalArgumentException("No valid users found to check conflicts.");
+        }
+
         List<GeneratedSchedule> schedules = scheduleRepository.findByUserEmailIn(emails);
         return ConflictChecker.detectConflicts(schedules);
+    }
+
+    // ✅ Utility method to fetch target emails
+    private List<String> getTargetEmails(BulkScheduleRequest request) {
+        if (request.getGroupName() != null && !request.getGroupName().isEmpty()) {
+            return userRepository.findByGroupName(request.getGroupName())
+                    .stream()
+                    .map(User::getEmail)
+                    .collect(Collectors.toList());
+        } else if (request.getEmails() != null && !request.getEmails().isEmpty()) {
+            return request.getEmails();
+        } else {
+            return Collections.emptyList();
+        }
     }
 }

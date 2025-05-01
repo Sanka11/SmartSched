@@ -1,6 +1,8 @@
 package com.smartsched.service;
 
+import com.smartsched.model.AllClassAssignment;
 import com.smartsched.model.User;
+import com.smartsched.repository.AllClassAssignmentRepository;
 import com.smartsched.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,6 +22,10 @@ public class UserService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+private AllClassAssignmentRepository classAssignmentRepo;
+
 
     // ✅ Register a new user
     public User registerUser(User user) {
@@ -103,9 +109,22 @@ public class UserService {
     }
 
     // ✅ Get all users
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
+    public List<User> getAllUsersWithGroups() {
+    List<User> users = userRepository.findAll();
+
+    for (User user : users) {
+        List<AllClassAssignment> assignments = classAssignmentRepo.findByEmailMatch(user.getEmail());
+
+if (!assignments.isEmpty()) {
+    user.setGroupName(assignments.get(0).getGroupName()); // or combine multiple
+}
+
+    
     }
+
+    return users;
+}
+
 
     // ✅ Delete user
     public void deleteUser(String userId) {

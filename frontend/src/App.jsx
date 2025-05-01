@@ -42,6 +42,7 @@ import StudentCustomSchedule from "./pages/StudentCustomSchedule";
 import LecturerCustomSchedule from "./pages/LecturerCustomSchedule";
 import SuperadminDashboard from "./pages/superadmin/SuperadminDashboard";
 import GenerateTimetable from "./pages/superadmin/schedule/GenerateTimetable";
+import ViewSchedulesPage from "./pages/superadmin/ViewSchedulesPage";
 
 function App() {
   return (
@@ -110,6 +111,7 @@ function App() {
         path="/superadmin/schedule/generate"
         element={<GenerateTimetable />}
       />
+      <Route path="/superadmin/schedule/view" element={<ViewSchedulesPage />} />
     </Routes>
   );
 }
