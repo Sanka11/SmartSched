@@ -4,10 +4,25 @@ import TaskModal from "../components/TaskModal";
 import DynamicSidebar from "../components/DynamicSidebar";
 import { toast } from "react-toastify";
 
-const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const days = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
 const hours = [
-  "08:00", "09:00", "10:00", "11:00", "12:00",
-  "13:00", "14:00", "15:00", "16:00", "17:00",
+  "08:00",
+  "09:00",
+  "10:00",
+  "11:00",
+  "12:00",
+  "13:00",
+  "14:00",
+  "15:00",
+  "16:00",
+  "17:00",
 ];
 
 const LecturerCustomSchedule = () => {
@@ -28,16 +43,19 @@ const LecturerCustomSchedule = () => {
       const response = await axios.get(
         `${import.meta.env.VITE_BACKEND_URL}/api/timetable/instructor/${email}`
       );
-      setAcademicSessions(response.data.timetable || []);
-      setTimetableTimestamp(response.data.generatedAt);
+      const result = response.data || {};
+      setAcademicSessions(result.timetable || []);
+      setTimetableTimestamp(result.generatedAt || null);
 
-      const lastCheck = localStorage.getItem("lastCheckLecturerTimetable");
-      if (lastCheck && lastCheck !== response.data.generatedAt) {
+      const promptShownFor = localStorage.getItem(
+        "lecturerCustomPromptShownFor"
+      );
+      if (result.generatedAt && promptShownFor !== result.generatedAt) {
         setShowPrompt(true);
       }
-      localStorage.setItem("lastCheckLecturerTimetable", response.data.generatedAt);
     } catch (err) {
       console.error("Failed to fetch academic timetable", err);
+      toast.error("❌ Failed to load academic timetable");
     }
   };
 
@@ -54,12 +72,17 @@ const LecturerCustomSchedule = () => {
       setPersonalSlots(result);
     } catch (err) {
       console.error("Failed to fetch personal slots", err);
+      toast.error("❌ Failed to load personal schedule");
     }
   };
 
   const deleteAllPersonalTasks = async () => {
     const promises = Object.values(personalSlots).map((task) =>
-      axios.delete(`${import.meta.env.VITE_BACKEND_URL}/api/custom-schedule/delete/${task.id}`)
+      axios.delete(
+        `${import.meta.env.VITE_BACKEND_URL}/api/custom-schedule/delete/${
+          task.id
+        }`
+      )
     );
     await Promise.all(promises);
     await fetchPersonalSlots();
@@ -68,14 +91,18 @@ const LecturerCustomSchedule = () => {
 
   const handlePromptChoice = async (choice) => {
     setShowPrompt(false);
+    localStorage.setItem("lecturerCustomPromptShownFor", timetableTimestamp);
+
     if (choice === "remove") {
       await deleteAllPersonalTasks();
     } else {
-      const conflicts = Object.entries(personalSlots).filter(([slotId, task]) => {
-        return academicSessions.some(
-          (s) => s.day === task.day && s.start_time === task.time
-        );
-      });
+      const conflicts = Object.entries(personalSlots).filter(
+        ([slotId, task]) => {
+          return academicSessions.some(
+            (s) => s.day === task.day && s.start_time === task.time
+          );
+        }
+      );
 
       for (let [slotId, task] of conflicts) {
         const res = confirm(
@@ -83,16 +110,21 @@ const LecturerCustomSchedule = () => {
         );
         if (res) {
           await axios.delete(
-            `${import.meta.env.VITE_BACKEND_URL}/api/custom-schedule/delete/${task.id}`
+            `${import.meta.env.VITE_BACKEND_URL}/api/custom-schedule/delete/${
+              task.id
+            }`
           );
         } else {
           const freeSlot = findFirstFreeSlot();
           if (freeSlot) {
-            await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/custom-schedule`, {
-              ...task,
-              day: freeSlot.day,
-              time: freeSlot.time,
-            });
+            await axios.post(
+              `${import.meta.env.VITE_BACKEND_URL}/api/custom-schedule`,
+              {
+                ...task,
+                day: freeSlot.day,
+                time: freeSlot.time,
+              }
+            );
           }
         }
       }
@@ -107,9 +139,12 @@ const LecturerCustomSchedule = () => {
 
   const saveSlot = async (slotId, data) => {
     try {
-      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/custom-schedule`, {
-        ...data,
-      });
+      await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/custom-schedule`,
+        {
+          ...data,
+        }
+      );
       await fetchPersonalSlots();
       toast.success("✅ Task saved");
     } catch (err) {
@@ -126,7 +161,9 @@ const LecturerCustomSchedule = () => {
     }
     try {
       await axios.delete(
-        `${import.meta.env.VITE_BACKEND_URL}/api/custom-schedule/delete/${task.id}`
+        `${import.meta.env.VITE_BACKEND_URL}/api/custom-schedule/delete/${
+          task.id
+        }`
       );
       await fetchPersonalSlots();
       toast.success("✅ Task deleted");
@@ -140,7 +177,9 @@ const LecturerCustomSchedule = () => {
     for (let d of days) {
       for (let t of hours) {
         const slotId = getSlotId(d, t);
-        const occupied = academicSessions.find((s) => s.day === d && s.start_time === t) || personalSlots[slotId];
+        const occupied =
+          academicSessions.find((s) => s.day === d && s.start_time === t) ||
+          personalSlots[slotId];
         if (!occupied) return { day: d, time: t };
       }
     }
@@ -152,8 +191,15 @@ const LecturerCustomSchedule = () => {
     fetchPersonalSlots();
   }, []);
 
-  const getSessionInSlot = (day, time) =>
-    academicSessions.find((s) => s.day === day && s.start_time === time);
+  const getSessionInSlot = (day, time) => {
+    const normalize = (t) =>
+      typeof t === "string" && t.length === 4
+        ? `0${t}`
+        : t?.toString().slice(0, 5);
+    return academicSessions.find(
+      (s) => s.day === day && normalize(s.start_time) === normalize(time)
+    );
+  };
 
   return (
     <div className="flex flex-col md:flex-row h-screen bg-gray-50">
@@ -168,7 +214,8 @@ const LecturerCustomSchedule = () => {
         {showPrompt && (
           <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-4 mb-4">
             <p className="text-gray-800 mb-3">
-              Your academic timetable has changed. Do you want to keep your custom tasks?
+              Your academic timetable has changed. Do you want to keep your
+              custom tasks?
             </p>
             <div className="flex gap-3">
               <button
@@ -226,12 +273,18 @@ const LecturerCustomSchedule = () => {
                               <div className="bg-blue-50 text-blue-800 p-2 rounded-lg border border-blue-100 text-xs md:text-sm">
                                 <div className="flex items-center gap-1 font-medium">
                                   <span>🎓</span>
-                                  <span className="truncate">{session.module_name}</span>
+                                  <span className="truncate">
+                                    {session.module_name}
+                                  </span>
                                 </div>
-                                <div className="mt-1 text-gray-600 truncate">{session.group_name}</div>
+                                <div className="mt-1 text-gray-600 truncate">
+                                  {session.group_name}
+                                </div>
                                 <div className="mt-1 flex items-center gap-1 text-gray-600">
                                   <span>🕒</span>
-                                  <span>{session.start_time}–{session.end_time}</span>
+                                  <span>
+                                    {session.start_time}–{session.end_time}
+                                  </span>
                                 </div>
                                 <div className="mt-1 flex items-center gap-1 text-gray-600 truncate">
                                   <span>🏫</span>
@@ -250,10 +303,14 @@ const LecturerCustomSchedule = () => {
                               >
                                 <div className="flex items-center gap-1 font-medium">
                                   <span>{personal.icon || "📌"}</span>
-                                  <span className="truncate">{personal.title}</span>
+                                  <span className="truncate">
+                                    {personal.title}
+                                  </span>
                                 </div>
                                 {personal.description && (
-                                  <div className="mt-1 truncate">{personal.description}</div>
+                                  <div className="mt-1 truncate">
+                                    {personal.description}
+                                  </div>
                                 )}
                               </div>
                             ) : (
@@ -261,7 +318,9 @@ const LecturerCustomSchedule = () => {
                                 onClick={() => handleAddTask(day, hour)}
                                 className="w-full h-full min-h-[80px] flex items-center justify-center text-gray-400 hover:text-indigo-500 transition-colors border-2 border-dashed border-gray-200 rounded-lg hover:border-indigo-300"
                               >
-                                <span className="text-xs md:text-sm">+ Add Task</span>
+                                <span className="text-xs md:text-sm">
+                                  + Add Task
+                                </span>
                               </button>
                             )}
                           </td>
@@ -277,12 +336,19 @@ const LecturerCustomSchedule = () => {
 
         <TaskModal
           isOpen={modalOpen}
-          onClose={() => setModalOpen(false)}
+          onClose={() => {
+            setModalOpen(false);
+            setSelectedSlot(null);
+          }}
           slot={selectedSlot}
-          onSave={(data) => saveSlot(getSlotId(selectedSlot.day, selectedSlot.time), data)}
+          onSave={(data) =>
+            saveSlot(getSlotId(selectedSlot.day, selectedSlot.time), data)
+          }
           onDelete={(slotId) => deleteSlot(slotId)}
           initialData={
-            selectedSlot ? personalSlots[getSlotId(selectedSlot.day, selectedSlot.time)] : null
+            selectedSlot
+              ? personalSlots[getSlotId(selectedSlot.day, selectedSlot.time)]
+              : null
           }
         />
       </main>

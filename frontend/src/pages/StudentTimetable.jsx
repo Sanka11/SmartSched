@@ -116,11 +116,6 @@ const StudentTimetable = () => {
     html2pdf().from(element).save("Student-Timetable.pdf");
   };
 
-  const getSessionsByDay = (day) =>
-    timetable
-      .filter((s) => (s.day || "").toLowerCase() === day.toLowerCase())
-      .sort((a, b) => a.start_time.localeCompare(b.start_time));
-
   useEffect(() => {
     if (token && email) {
       fetchTimetable();
@@ -145,6 +140,25 @@ const StudentTimetable = () => {
     if (location.includes("zoom") || location.includes("online")) return "💻";
     if (session.event) return "🎉";
     return "🎓";
+  };
+
+  const getSessionsByDay = (day) => {
+    const filtered = timetable.filter(
+      (s) => (s.day || "").toLowerCase() === day.toLowerCase()
+    );
+
+    // Remove duplicates based on composite key
+    const seen = new Set();
+    const unique = [];
+    filtered.forEach((s) => {
+      const key = `${s.module_id}-${s.group_id}-${s.day}-${s.start_time}-${s.instructor_id}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        unique.push(s);
+      }
+    });
+
+    return unique.sort((a, b) => a.start_time.localeCompare(b.start_time));
   };
 
   return (

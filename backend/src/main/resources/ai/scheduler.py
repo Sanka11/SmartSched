@@ -45,7 +45,6 @@ def calculate_fitness(timetable):
 
     for session in timetable:
         key = (session["module_id"], session["group_id"], session["day"], session["start_time"], session["end_time"])
-
         schedule_map[key].append(session)
 
     for sessions in schedule_map.values():
@@ -73,7 +72,7 @@ def assign_conflict_free_slots(sessions):
     for session in sessions:
         conflict = True
         attempts = 0
-        original_day = session["day"]  # ✅ Keep day fixed
+        original_day = session["day"]
 
         while conflict and attempts < 200:
             start_idx = random.randint(0, len(HOURS) - 2)
@@ -82,9 +81,9 @@ def assign_conflict_free_slots(sessions):
             time_slot = (original_day, start_time, end_time)
 
             if (time_slot not in student_occupied[session["group_id"]] and
-                    time_slot not in instructor_occupied[session["instructor_id"]]):
+                time_slot not in instructor_occupied[session["instructor_id"]]):
 
-                session["day"] = original_day  # ✅ Keep day unchanged
+                session["day"] = original_day
                 session["start_time"] = start_time
                 session["end_time"] = end_time
 
@@ -96,6 +95,16 @@ def assign_conflict_free_slots(sessions):
 
     return sessions
 
+# === Remove Duplicates ===
+def deduplicate_sessions(timetable):
+    seen = set()
+    unique_sessions = []
+    for s in timetable:
+        key = (s["module_id"], s["group_id"], s["day"], s["start_time"], s["instructor_id"])
+        if key not in seen:
+            seen.add(key)
+            unique_sessions.append(s)
+    return unique_sessions
 
 # === Generate Initial Population ===
 def generate_population(base_sessions):
@@ -104,11 +113,7 @@ def generate_population(base_sessions):
     unique_sessions = []
 
     for session in base_sessions:
-        key = (
-            session["module_id"],
-            session["group_id"],
-            session["instructor_id"]
-        )
+        key = (session["module_id"], session["group_id"], session["instructor_id"])
         if key not in unique_sessions_set:
             unique_sessions_set.add(key)
             unique_sessions.append(deepcopy(session))
@@ -116,6 +121,7 @@ def generate_population(base_sessions):
     for _ in range(POPULATION_SIZE):
         individual = deepcopy(unique_sessions)
         individual = assign_conflict_free_slots(individual)
+        individual = deduplicate_sessions(individual)
         random.shuffle(individual)
         population.append(individual)
 
@@ -129,7 +135,7 @@ def select_parents(population):
 def crossover(parent1, parent2):
     mid = len(parent1) // 2
     child = deepcopy(parent1[:mid] + parent2[mid:])
-    return assign_conflict_free_slots(child)
+    return assign_conflict_free_slots(deduplicate_sessions(child))
 
 # === Mutation ===
 def mutate(timetable):
@@ -138,7 +144,7 @@ def mutate(timetable):
     if random.random() < MUTATION_RATE:
         i, j = random.sample(range(len(timetable)), 2)
         timetable[i], timetable[j] = timetable[j], timetable[i]
-    return assign_conflict_free_slots(timetable)
+    return assign_conflict_free_slots(deduplicate_sessions(timetable))
 
 # === Genetic Algorithm Main Function ===
 def run_genetic_algorithm(user_email, user_role):
@@ -147,7 +153,7 @@ def run_genetic_algorithm(user_email, user_role):
     if not base_sessions:
         print("❌ No valid sessions found. Skipping.")
         return
-    
+
     course_set = set()
     for session in base_sessions:
         course = session.get("course_name", "UNKNOWN")
@@ -186,7 +192,7 @@ def run_genetic_algorithm(user_email, user_role):
         debug(f"Generation {gen+1} | Best Fitness: {generation_fitness}")
 
         if best_fitness == 0:
-            debug("🎯 Perfect schedule found! Stopping early.")
+            debug("🌟 Perfect schedule found! Stopping early.")
             break
 
     batch_id = save_all_schedules(user_email, sorted_population)
@@ -210,18 +216,21 @@ def save_all_schedules(user_email, sorted_population):
 def save_best_schedule(user_email, schedule, batch_id, base_sessions):
     from bson import ObjectId
 
-    # Build event lookup map using a unique key for each session
+    # ✅ Updated: Use only up to start_time for key (to match fetch_data.py)
     session_map = {
         (s["module_id"], s["group_id"], s["day"], s["start_time"]): s.get("event")
-        for s in base_sessions
-        if s.get("event") is not None
+        for s in base_sessions if s.get("event") is not None
     }
+
+    # ✅ Deduplicate again before saving
+    schedule = deduplicate_sessions(schedule)
 
     enriched_schedule = []
     for s in schedule:
+        # ✅ Use matching key format
         key = (s["module_id"], s["group_id"], s["day"], s["start_time"])
-        s["event"] = session_map.get(key)  # attach matching event (if any)
-        s["className"] = s.get("group_id", "UNKNOWN")  # for frontend table logic
+        s["event"] = session_map.get(key)
+        s["className"] = s.get("group_id", "UNKNOWN")
         enriched_schedule.append(s)
 
     result = {

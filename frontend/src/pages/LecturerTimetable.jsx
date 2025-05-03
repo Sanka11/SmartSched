@@ -3,14 +3,29 @@ import axios from "axios";
 import html2pdf from "html2pdf.js";
 import DynamicSidebar from "../components/DynamicSidebar";
 
-const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-
-const colors = [
-  "bg-blue-100", "bg-red-100", "bg-green-100", "bg-yellow-100",
-  "bg-purple-100", "bg-pink-100", "bg-orange-100", "bg-cyan-100",
-  "bg-teal-100", "bg-indigo-100"
+const days = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
 ];
 
+const colors = [
+  "bg-blue-100",
+  "bg-red-100",
+  "bg-green-100",
+  "bg-yellow-100",
+  "bg-purple-100",
+  "bg-pink-100",
+  "bg-orange-100",
+  "bg-cyan-100",
+  "bg-teal-100",
+  "bg-indigo-100",
+];
+
+const token = localStorage.getItem("token");
 const LecturerTimetable = () => {
   const [timetable, setTimetable] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,11 +36,14 @@ const LecturerTimetable = () => {
   const user = JSON.parse(localStorage.getItem("user"));
   const email = user?.email;
 
+  const token = localStorage.getItem("token");
+
   const fetchTimetable = async () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        `${import.meta.env.VITE_BACKEND_URL}/api/timetable/instructor/${email}`
+        `${import.meta.env.VITE_BACKEND_URL}/api/timetable/instructor/${email}`,
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       const data = response.data?.timetable || [];
       setTimetable(data);
@@ -50,7 +68,10 @@ const LecturerTimetable = () => {
 
     try {
       const response = await axios.get(
-        `${import.meta.env.VITE_BACKEND_URL}/api/scheduler/generate?email=${email}&role=lecturer`
+        `${
+          import.meta.env.VITE_BACKEND_URL
+        }/api/scheduler/generate?email=${email}&role=lecturer`,
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       const msg = response.data;
 
@@ -85,10 +106,23 @@ const LecturerTimetable = () => {
     html2pdf().from(element).save("Lecturer-Timetable.pdf");
   };
 
-  const getSessionsByDay = (day) =>
-    timetable
-      .filter((session) => session.day === day)
-      .sort((a, b) => a.start_time.localeCompare(b.start_time));
+  const getSessionsByDay = (day) => {
+    const filtered = timetable.filter(
+      (s) => (s.day || "").toLowerCase() === day.toLowerCase()
+    );
+
+    const seen = new Set();
+    const unique = [];
+    filtered.forEach((s) => {
+      const key = `${s.module_id}-${s.group_id}-${s.day}-${s.start_time}-${s.instructor_id}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        unique.push(s);
+      }
+    });
+
+    return unique.sort((a, b) => a.start_time.localeCompare(b.start_time));
+  };
 
   useEffect(() => {
     fetchTimetable();
@@ -177,23 +211,47 @@ const LecturerTimetable = () => {
                         >
                           {sessions.length > 0 ? (
                             sessions.map((session, idx) => {
-                              const bgColor = moduleColorMap[session.module_name] || "bg-gray-100";
+                              const bgColor =
+                                moduleColorMap[session.module_name] ||
+                                "bg-gray-100";
                               return (
                                 <div
                                   key={idx}
-                                  className={`pb-2 px-2 py-1 rounded ${bgColor} ${idx !== sessions.length - 1 ? "border-b border-gray-200 mb-4" : ""}`}
+                                  className={`pb-2 px-2 py-1 rounded ${bgColor} ${
+                                    idx !== sessions.length - 1
+                                      ? "border-b border-gray-200 mb-4"
+                                      : ""
+                                  }`}
                                   title={`${session.module_name} • ${session.group_name} • ${session.location} • ${session.instructor_name}`}
                                 >
-                                  <strong>{getSessionTypeIcon(session)} {session.module_name}</strong><br />
-                                  {session.group_name}<br />
-                                  🕒 {session.start_time}–{session.end_time}<br />
-                                  🏫 {session.location}<br />
+                                  <strong>
+                                    {getSessionTypeIcon(session)}{" "}
+                                    {session.module_name}
+                                  </strong>
+                                  <br />
+                                  {session.group_name}
+                                  <br />
+                                  🕒 {session.start_time}–{session.end_time}
+                                  <br />
+                                  🏫 {session.location}
+                                  <br />
                                   👨‍🏫 {session.instructor_name}
                                   {session.event && (
                                     <div className="mt-2 text-xs bg-gray-50 border p-1 rounded">
-                                      🎉 <strong>{session.event.eventName}</strong><br />
-                                      🗓 {new Date(session.event.eventDate).toLocaleDateString()} {new Date(session.event.eventTime).toLocaleTimeString()}<br />
-                                      📍 {session.event.eventMode} - {session.event.location}<br />
+                                      🎉{" "}
+                                      <strong>{session.event.eventName}</strong>
+                                      <br />
+                                      🗓{" "}
+                                      {new Date(
+                                        session.event.eventDate
+                                      ).toLocaleDateString()}{" "}
+                                      {new Date(
+                                        session.event.eventTime
+                                      ).toLocaleTimeString()}
+                                      <br />
+                                      📍 {session.event.eventMode} -{" "}
+                                      {session.event.location}
+                                      <br />
                                       📝 {session.event.description}
                                     </div>
                                   )}
