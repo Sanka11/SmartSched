@@ -454,7 +454,7 @@ function AllCourseAndModules() {
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <FiDollarSign className="text-gray-400" />
+                    {/*   <FiDollarSign className="text-gray-400" /> */}
                     </div>
                     <input
                       type="number"
@@ -847,8 +847,8 @@ function AllCourseAndModules() {
 
                       <div className="mt-3 flex flex-wrap gap-3">
                         <div className="flex items-center text-sm text-gray-500">
-                          <FiDollarSign className="mr-1.5 flex-shrink-0 text-gray-400" />
-                          <span>Rs {courseItem.courseFee}</span>
+{/*                           <FiDollarSign className="mr-1.5 flex-shrink-0 text-gray-400" />
+ */}                          <span>Rs {courseItem.courseFee}</span>
                         </div>
                         <div className="flex items-center text-sm text-gray-500">
                           <FiMail className="mr-1.5 flex-shrink-0 text-gray-400" />
