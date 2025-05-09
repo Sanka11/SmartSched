@@ -41,8 +41,11 @@ public class SecurityConfig {
             .addFilterBefore(new JwtAuthenticationFilter(jwtTokenUtil), org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class)
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/users/login", "/api/users/register", "/api/users/forgot-password").permitAll()
-                .requestMatchers("/api/schedule/**", "/api/custom-schedule/**", "/api/timetable/**").permitAll()
+                .requestMatchers("/api/users/email/**").hasAnyRole("SUPERADMIN", "ADMIN", "STAFF", "STUDENT", "LECTURER")
                 .requestMatchers("/api/schedule/generate/bulk").hasRole("SUPERADMIN")
+                .requestMatchers("/api/timetable/all").hasRole("SUPERADMIN")
+                .requestMatchers("/api/timetable/conflicts").hasRole("SUPERADMIN") 
+                .requestMatchers("/api/schedule/**", "/api/custom-schedule/**", "/api/timetable/**").permitAll()
 
                 .anyRequest().authenticated()
             );

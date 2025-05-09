@@ -7,14 +7,41 @@ import {
   FaUserGraduate,
 } from "react-icons/fa";
 import DynamicSidebar from "../components/DynamicSidebar";
+import axios from "axios";
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState({});
+  const [eventCount, setEventCount] = useState(0);
 
   useEffect(() => {
     const savedUser = JSON.parse(localStorage.getItem("user"));
     setUser(savedUser || {});
+
+    // Fetch upcoming events
+
+    const fetchEvents = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/api/events/all`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const events = response.data || [];
+        const today = new Date();
+        const upcoming = events.filter((e) => new Date(e.eventDate) >= today);
+        setEventCount(upcoming.length);
+      } catch (err) {
+        console.error("Failed to fetch events", err);
+      }
+    };
+
+    fetchEvents();
   }, []);
 
   return (
@@ -82,7 +109,7 @@ const StudentDashboard = () => {
             <FaCalendarAlt size={36} className="text-purple-500" />
             <div>
               <p className="text-sm text-gray-600">Upcoming Events</p>
-              <p className="text-xl font-bold">3</p>
+              <p className="text-xl font-bold">{eventCount}</p>
             </div>
           </div>
         </div>

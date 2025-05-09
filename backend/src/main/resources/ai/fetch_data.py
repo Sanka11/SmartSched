@@ -21,15 +21,35 @@ events = db["events"]
 modules = db["modules"]
 courses = db["courses"]
 
-# === Fetch matching event for a session ===
+# === Fetch event-time map for global conflict checking ===
+def fetch_events(db):
+    from datetime import datetime
+    event_map = {}  # { "Wednesday": ["09:00", "14:00"], ... }
+
+    try:
+        upcoming_events = events.find({})
+        for event in upcoming_events:
+            if not event.get("eventDate") or not event.get("eventTime"):
+                continue
+
+            day = event["eventDate"].strftime("%A")  # "Wednesday"
+            time_str = event["eventTime"].strftime("%H:%M")  # "09:00"
+
+            if day not in event_map:
+                event_map[day] = []
+            event_map[day].append(time_str)
+    except Exception as e:
+        print("⚠️ Error fetching global events:", e)
+
+    return event_map
+
+# === Match event for a specific session ===
 def fetch_event_for_session(session_day, session_start):
     try:
         ist = tz_util.FixedOffset(330, "IST")
-
         session_time = datetime.strptime(session_start, "%H:%M").time()
         session_dt = datetime.combine(date.today(), session_time).replace(tzinfo=ist)
 
-        # ✅ Updated: Convert "Monday" → 0
         WEEKDAY_MAP = {
             "Monday": 0, "Tuesday": 1, "Wednesday": 2,
             "Thursday": 3, "Friday": 4, "Saturday": 5, "Sunday": 6
@@ -69,11 +89,8 @@ def fetch_event_for_session(session_day, session_start):
 
     return None
 
-
-# === Fetch all class sessions and fill missing assigned modules ===
+# === Fetch all sessions for a student or lecturer ===
 def fetch_all_sessions(user_email=None, user_role=None):
-    global modules
-
     print("Fetching sessions from MongoDB...")
     print("Connected to DB:", db.name)
     print("Collections available:", db.list_collection_names())
@@ -85,7 +102,6 @@ def fetch_all_sessions(user_email=None, user_role=None):
         return []
 
     print("User role:", user_role)
-    query = {}
 
     if user_role == "student":
         enrollment = student_enrollments.find_one({"email": user_email})
@@ -93,58 +109,60 @@ def fetch_all_sessions(user_email=None, user_role=None):
             print("❌ Student enrollment not found.")
             return []
 
-        course_name = enrollment.get("courses", [])[0]
-        group_id = enrollment.get("courseClasses", {}).get(course_name)
-        assigned_modules = enrollment.get("courseModules", {}).get(course_name, [])
+        used_modules_global = set()
 
-        print("Student group ID:", group_id)
-        query = {"groupId": group_id}
-        results = list(allclassassignment.find(query))
+        for course_name in enrollment.get("courses", []):
+            group_id = enrollment.get("courseClasses", {}).get(course_name)
+            assigned_modules = enrollment.get("courseModules", {}).get(course_name, [])
 
-        used_modules = set()
-        for doc in results:
-         day = doc.get("date")
-         start_time = doc.get("starttime")
-         event = fetch_event_for_session(day, start_time)
-        print(f"🧪 Matching event for {doc.get('moduleName')} on {day} at {start_time} → {event}")
+            print(f"📘 Processing course: {course_name} → Group ID: {group_id}")
+            if group_id:
+                query = {"groupId": str(group_id)}
+                results = list(allclassassignment.find(query))
 
-        session = {
-            "course_id": doc.get("courseId"),
-            "course_name": doc.get("courseName"),
-            "module_id": doc.get("moduleId"),
-             "module_name": doc.get("moduleName"),
-              "group_id": doc.get("groupId"),
-              "group_name": doc.get("groupName"),
-             "instructor_id": doc.get("instructorId"),
-             "instructor_name": doc.get("instructorName"),
-             "location": doc.get("location"),
-              "day": day,
-              "start_time": start_time,
-         "end_time": doc.get("endtime"),
-         "event": event  # ✅ Attach event here
-         }   
-        sessions.append(session)
-        used_modules.add(doc.get("moduleName"))
+                for doc in results:
+                    day = doc.get("date")
+                    start_time = doc.get("starttime")
+                    event = fetch_event_for_session(day, start_time)
 
-        
-        for mod in assigned_modules:
-            if mod not in used_modules:
-                module_doc = modules.find_one({"moduleName": mod})
-                sessions.append({
-                    "course_id": "-",
-                    "course_name": course_name,
-                    "module_id": str(module_doc["_id"]) if module_doc else mod.replace(" ", "_").lower(),
-                    "module_name": mod,
-                    "group_id": "-",
-                    "group_name": "UNSCHEDULED",
-                    "instructor_id": "-",
-                    "instructor_name": "-",
-                    "location": "-",
-                    "day": "TBD",
-                    "start_time": "--",
-                    "end_time": "--",
-                    "event": None
-                })
+                    print(f"🧪 Matching event for {doc.get('moduleName')} on {day} at {start_time} → {event}")
+
+                    session = {
+                        "course_id": doc.get("courseId"),
+                        "course_name": doc.get("courseName"),
+                        "module_id": doc.get("moduleId"),
+                        "module_name": doc.get("moduleName"),
+                        "group_id": doc.get("groupId"),
+                        "group_name": doc.get("groupName"),
+                        "instructor_id": doc.get("instructorId"),
+                        "instructor_name": doc.get("instructorName"),
+                        "location": doc.get("location"),
+                        "day": day,
+                        "start_time": start_time,
+                        "end_time": doc.get("endtime"),
+                        "event": event
+                    }
+                    sessions.append(session)
+                    used_modules_global.add(doc.get("moduleName"))
+
+            for mod in assigned_modules:
+                if mod not in used_modules_global:
+                    module_doc = modules.find_one({"moduleName": mod})
+                    sessions.append({
+                        "course_id": "-",
+                        "course_name": course_name,
+                        "module_id": str(module_doc["_id"]) if module_doc else mod.replace(" ", "_").lower(),
+                        "module_name": mod,
+                        "group_id": "-",
+                        "group_name": "UNSCHEDULED",
+                        "instructor_id": "-",
+                        "instructor_name": "-",
+                        "location": "-",
+                        "day": "TBD",
+                        "start_time": "--",
+                        "end_time": "--",
+                        "event": None
+                    })
 
     elif user_role == "lecturer":
         instructor = instructor_assignments.find_one({"email": user_email})
@@ -152,20 +170,20 @@ def fetch_all_sessions(user_email=None, user_role=None):
             print("❌ Instructor assignment not found.")
             return []
 
-        modules = instructor.get("modules", [])
-        class_map = instructor.get("classes", {})  # { moduleName: groupId }
+        modules_list = instructor.get("modules", [])
+        class_map = instructor.get("classes", {})
 
-        if not modules or not class_map:
+        if not modules_list or not class_map:
             print("❌ No valid modules or class assignments.")
             return []
 
-        print("Lecturer modules:", modules)
+        print("Lecturer modules:", modules_list)
         print("Lecturer class map:", class_map)
 
         query = {
-            "moduleName": { "$in": modules },
-            "groupId": { "$in": list(class_map.values()) },
-            "instructorId": str(instructor["_id"])  # safest unique match
+            "moduleName": {"$in": modules_list},
+            "groupId": {"$in": list(class_map.values())},
+            "instructorId": str(instructor["_id"])
         }
 
         results = list(allclassassignment.find(query))
@@ -174,6 +192,13 @@ def fetch_all_sessions(user_email=None, user_role=None):
             return []
 
         for doc in results:
+            session_day = str(doc.get("date")).capitalize()
+            session_start = str(doc.get("starttime")).zfill(5)
+
+            event = fetch_event_for_session(session_day, session_start)
+
+            print(f"🧪 Matching event for {doc.get('moduleName')} on {session_day} at {session_start} → {event}")
+
             sessions.append({
                 "course_id": doc.get("courseId"),
                 "course_name": doc.get("courseName"),
@@ -184,26 +209,22 @@ def fetch_all_sessions(user_email=None, user_role=None):
                 "instructor_id": doc.get("instructorId"),
                 "instructor_name": doc.get("instructorName"),
                 "location": doc.get("location"),
-                "day": doc.get("date"),
-                "start_time": doc.get("starttime"),
+                "day": session_day,
+                "start_time": session_start,
                 "end_time": doc.get("endtime"),
-                "event": fetch_event_for_session(doc.get("date"), doc.get("starttime"))
+                "event": event
             })
 
     return sessions
 
-
-# === Debug entry point ===
+# === Debug Entry Point ===
 def debug_fetch():
     res = fetch_all_sessions("thissa@gmail.com", "student")
+    if not res:
+        print("❌ No sessions returned.")
+        return
     for r in res:
         print(r)
-
-        from fetch_data import fetch_all_sessions
-sessions = fetch_all_sessions("thissa@gmail.com", "student")
-for s in sessions:
-    print(s["day"], s["start_time"], s["module_name"])
-
 
 if __name__ == "__main__":
     debug_fetch()

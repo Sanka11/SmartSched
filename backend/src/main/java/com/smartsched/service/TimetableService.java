@@ -8,8 +8,10 @@ import com.smartsched.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
+import com.smartsched.model.Event;
 
 @Service
 public class TimetableService {
@@ -27,10 +29,13 @@ public class TimetableService {
     private InstructorAssignmentRepository instructorAssignmentRepository;
 
     @Autowired
-private StudentEnrollmentRepository studentRepo;
+    private StudentEnrollmentRepository studentRepo;
 
-@Autowired
-private GeneratedScheduleRepository scheduleRepo;
+    @Autowired
+    private GeneratedScheduleRepository scheduleRepo;
+
+    @Autowired
+    private EventRepository eventRepository;
 
 
     // ✅ Existing method (by MongoDB _id)
@@ -108,7 +113,7 @@ public Map<String, Object> getStudentScheduleWithMetadata(String email) {
             .orElse(null);
 
     if (student == null || student.getCourseClasses() == null) {
-        return Map.of("timetable", new ArrayList<>(), "generatedAt", null);
+        return Map.of("timetable", new ArrayList<>(), "events", new ArrayList<>(), "generatedAt", null);
     }
 
     Set<String> groupIds = new HashSet<>(student.getCourseClasses().values());
@@ -116,28 +121,89 @@ public Map<String, Object> getStudentScheduleWithMetadata(String email) {
     GeneratedSchedule latestSchedule = scheduleRepo
             .findTopByUserEmailAndTimetableNotNullOrderByGeneratedAtDesc(email);
 
-    if (latestSchedule == null || latestSchedule.getTimetable() == null) {
-        return Map.of("timetable", new ArrayList<>(), "generatedAt", null);
+    List<Map<String, Object>> filteredTimetable = new ArrayList<>();
+    if (latestSchedule != null && latestSchedule.getTimetable() != null) {
+        Set<String> seen = new HashSet<>();
+        filteredTimetable = latestSchedule.getTimetable().stream()
+                .filter(entry -> groupIds.contains(String.valueOf(entry.get("group_id"))))
+                .filter(entry -> {
+                    String key = entry.get("module_name") + "|" + entry.get("group_name") + "|" +
+                            entry.get("day") + "|" + entry.get("start_time") + "|" + entry.get("end_time") + "|" +
+                            entry.get("location");
+                    return seen.add(key);
+                })
+                .collect(Collectors.toList());
     }
 
-    Set<String> seen = new HashSet<>();
-    List<Map<String, Object>> filtered = latestSchedule.getTimetable().stream()
-            .filter(entry -> groupIds.contains(String.valueOf(entry.get("group_id"))))
-            .filter(entry -> {
-                String key = entry.get("module_name") + "|" + entry.get("group_name") + "|" +
-                        entry.get("day") + "|" + entry.get("start_time") + "|" + entry.get("end_time") + "|" +
-                        entry.get("location");
-                return seen.add(key);
-            })
-            .collect(Collectors.toList());
+    // Fetch all upcoming events separately
+    List<Event> events = eventRepository.findAll().stream()
+        .filter(event -> event.getEventDate().isAfter(LocalDate.now().minusDays(1)))
+        .sorted(Comparator.comparing(Event::getEventDate))
+        .collect(Collectors.toList());
 
     return Map.of(
-        "timetable", filtered,
-        "generatedAt", latestSchedule.getGeneratedAt().toString()
+        "timetable", filteredTimetable,
+        "events", events,
+        "generatedAt", latestSchedule != null ? latestSchedule.getGeneratedAt().toString() : null
     );
 }
 
+public Map<String, Object> getLecturerScheduleWithMetadata(String email) {
+    System.out.println("📥 Called getLecturerScheduleWithMetadata for: " + email);
 
+    InstructorAssignment instructor = instructorAssignmentRepository.findByEmail(email).orElse(null);
+    if (instructor == null) {
+        System.out.println("⚠️ No instructor assignment found.");
+        return Map.of("timetable", List.of(), "events", List.of(), "generatedAt", null);
+    }
+
+    Set<String> moduleNames = new HashSet<>(instructor.getModules());
+    GeneratedSchedule latestSchedule = scheduleRepo.findTopByUserEmailAndTimetableNotNullOrderByGeneratedAtDesc(email);
+
+    List<Map<String, Object>> filteredTimetable = new ArrayList<>();
+    if (latestSchedule != null && latestSchedule.getTimetable() != null) {
+        Set<String> seen = new HashSet<>();
+        filteredTimetable = latestSchedule.getTimetable().stream()
+        .filter(entry -> {
+            Object module = entry.get("module");
+            Object moduleName = entry.get("module_name");
+            String key = module != null ? module.toString() : (moduleName != null ? moduleName.toString() : "");
+            return moduleNames.contains(key);
+        })
+        
+            .filter(entry -> {
+                String key = entry.get("module_name") + "|" + entry.get("group_name") + "|" +
+                              entry.get("day") + "|" + entry.get("start_time") + "|" + entry.get("end_time") +
+                              "|" + entry.get("location");
+                return seen.add(key);
+            })
+            .collect(Collectors.toList());
+    } else {
+        System.out.println("⚠️ No latest schedule found for lecturer.");
+    }
+
+    // 🔍 Debug total events
+    List<Event> allEvents = eventRepository.findAll();
+    System.out.println("📦 Total events in DB: " + allEvents.size());
+
+    // ✅ Filter upcoming events
+    List<Event> events = allEvents.stream()
+        .filter(event -> {
+            LocalDate date = event.getEventDate();
+            return date != null && !date.isBefore(LocalDate.now());
+
+        })
+        .sorted(Comparator.comparing(Event::getEventDate))
+        .collect(Collectors.toList());
+
+    System.out.println("✅ Upcoming events returned: " + events.size());
+
+    return Map.of(
+        "timetable", filteredTimetable,
+        "events", events,
+        "generatedAt", latestSchedule != null ? latestSchedule.getGeneratedAt().toString() : null
+    );
+}
 }
 
 

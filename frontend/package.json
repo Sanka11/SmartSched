@@ -20,6 +20,7 @@
     "connect-history-api-fallback": "^2.0.0",
     "crypto-js": "^4.2.0",
     "framer-motion": "^12.7.4",
+    "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.10.3",
     "http-proxy-middleware": "^3.0.5",
     "jspdf": "^2.5.2",

@@ -39,10 +39,12 @@ public class JwtTokenUtil {
     }
 
     public String getRoleFromToken(String token) {
-        return Jwts.parserBuilder().setSigningKey(key).build()
-                .parseClaimsJws(token)
-                .getBody().get("role", String.class);
+        String role = Jwts.parserBuilder().setSigningKey(key).build()
+            .parseClaimsJws(token)
+            .getBody().get("role", String.class);
+        return role.toUpperCase(); 
     }
+    
 
     public boolean validateToken(String token) {
         try {

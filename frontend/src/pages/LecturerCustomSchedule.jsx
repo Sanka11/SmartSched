@@ -3,6 +3,7 @@ import axios from "axios";
 import TaskModal from "../components/TaskModal";
 import DynamicSidebar from "../components/DynamicSidebar";
 import { toast } from "react-toastify";
+import { jsPDF } from "jspdf";
 
 const days = [
   "Monday",
@@ -173,6 +174,145 @@ const LecturerCustomSchedule = () => {
     }
   };
 
+  const hexToRgb = (hex) => {
+    if (!hex) return null;
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result
+      ? [
+          parseInt(result[1], 16),
+          parseInt(result[2], 16),
+          parseInt(result[3], 16),
+        ]
+      : null;
+  };
+
+  // Add this function to your component
+  const handleDownloadPDF = () => {
+    try {
+      const doc = new jsPDF({
+        orientation: "landscape",
+        unit: "pt",
+        format: "a4",
+      });
+
+      // PDF styling
+      const headerColor = [41, 128, 185];
+      const classColor = [52, 152, 219];
+      const textColor = [0, 0, 0];
+      const fontSize = 10;
+      const cellPadding = 10;
+
+      // Calculate column widths
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const timeColWidth = 60;
+      const dayColWidth = (pageWidth - timeColWidth - 40) / 6;
+
+      // Add title
+      doc.setFontSize(16);
+      doc.setTextColor(...textColor);
+      doc.text("Lecturer Custom Schedule", pageWidth / 2, 30, {
+        align: "center",
+      });
+      doc.setFontSize(fontSize);
+
+      let startY = 60;
+
+      // Draw table headers
+      doc.setFillColor(...headerColor);
+      doc.setTextColor(255, 255, 255);
+      doc.setFont(undefined, "bold");
+
+      // Time column header
+      doc.rect(20, startY, timeColWidth, 20, "F");
+      doc.text("Time", 20 + timeColWidth / 2, startY + 13, { align: "center" });
+
+      // Day columns
+      days.forEach((day, i) => {
+        const x = 20 + timeColWidth + i * dayColWidth;
+        doc.rect(x, startY, dayColWidth, 20, "F");
+        doc.text(day, x + dayColWidth / 2, startY + 13, { align: "center" });
+      });
+
+      startY += 20;
+
+      // Draw time slots
+      hours.forEach((hour, rowIndex) => {
+        // Time label
+        doc.setFillColor(245, 245, 245);
+        doc.rect(20, startY, timeColWidth, 80, "F");
+        doc.setTextColor(...textColor);
+        doc.text(hour, 20 + timeColWidth / 2, startY + 40, { align: "center" });
+
+        // Day cells
+        days.forEach((day, colIndex) => {
+          const x = 20 + timeColWidth + colIndex * dayColWidth;
+          const y = startY;
+          const slotId = getSlotId(day, hour);
+          const session = getSessionInSlot(day, hour);
+          const personal = personalSlots[slotId];
+
+          // Cell border
+          doc.setDrawColor(200, 200, 200);
+          doc.rect(x, y, dayColWidth, 80, "S");
+
+          if (session) {
+            // Academic session
+            doc.setFillColor(...classColor);
+            doc.rect(x, y, dayColWidth, 80, "F");
+            doc.setTextColor(255, 255, 255);
+
+            doc.text(session.module_name, x + cellPadding, y + 15, {
+              maxWidth: dayColWidth - cellPadding * 2,
+            });
+
+            doc.setFontSize(fontSize - 2);
+            doc.text(
+              `${session.start_time}-${session.end_time}`,
+              x + cellPadding,
+              y + 35
+            );
+            doc.text(session.location, x + cellPadding, y + 50);
+            doc.setFontSize(fontSize);
+          } else if (personal) {
+            // Personal task
+            const rgb = hexToRgb(personal.color) || [155, 89, 182];
+            doc.setFillColor(...rgb);
+            doc.rect(x, y, dayColWidth, 80, "F");
+            doc.setTextColor(255, 255, 255);
+
+            doc.text(personal.title, x + cellPadding, y + 15, {
+              maxWidth: dayColWidth - cellPadding * 2,
+            });
+
+            if (personal.description) {
+              doc.setFontSize(fontSize - 2);
+              doc.text(personal.description, x + cellPadding, y + 35, {
+                maxWidth: dayColWidth - cellPadding * 2,
+              });
+              doc.setFontSize(fontSize);
+            }
+          }
+        });
+
+        startY += 80;
+
+        // Add new page if needed
+        if (
+          startY > doc.internal.pageSize.getHeight() - 50 &&
+          rowIndex < hours.length - 1
+        ) {
+          doc.addPage();
+          startY = 20;
+        }
+      });
+
+      doc.save("Lecturer-Schedule.pdf");
+    } catch (error) {
+      console.error("PDF generation failed:", error);
+      toast.error("Failed to generate PDF");
+    }
+  };
+
   const findFirstFreeSlot = () => {
     for (let d of days) {
       for (let t of hours) {
@@ -233,6 +373,15 @@ const LecturerCustomSchedule = () => {
             </div>
           </div>
         )}
+
+        <div className="flex justify-end mb-4">
+          <button
+            onClick={handleDownloadPDF}
+            className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+          >
+            📄 Download PDF
+          </button>
+        </div>
 
         <div className="bg-white rounded-lg shadow-sm p-4 overflow-hidden">
           <div className="overflow-x-auto pb-2">
