@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import html2pdf from "html2pdf.js";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 import DynamicSidebar from "../components/DynamicSidebar";
 
 const days = [
@@ -32,6 +33,7 @@ const LecturerTimetable = () => {
   const [generating, setGenerating] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [events, setEvents] = useState([]);
 
   const user = JSON.parse(localStorage.getItem("user"));
   const email = user?.email;
@@ -42,13 +44,24 @@ const LecturerTimetable = () => {
     setLoading(true);
     try {
       const response = await axios.get(
-        `${import.meta.env.VITE_BACKEND_URL}/api/timetable/instructor/${email}`,
+        `${
+          import.meta.env.VITE_BACKEND_URL
+        }/api/timetable/instructor/view/${email}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      const data = response.data?.timetable || [];
-      setTimetable(data);
 
-      if (data.length === 0) {
+      const result = response.data || {};
+      setTimetable(result.timetable || []);
+
+      // Filter upcoming events only
+      const now = new Date();
+      const upcomingEvents = (result.events || []).filter((event) => {
+        const eventDateTime = new Date(`${event.eventDate}T${event.eventTime}`);
+        return eventDateTime >= now;
+      });
+      setEvents(upcomingEvents);
+
+      if ((result.timetable || []).length === 0) {
         setError("You are not yet assigned to any modules.");
       } else {
         setError("");
@@ -73,17 +86,18 @@ const LecturerTimetable = () => {
         }/api/scheduler/generate?email=${email}&role=lecturer`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      const msg = response.data;
+
+      const msg =
+        typeof response.data === "string"
+          ? response.data
+          : response.data.message || "";
 
       if (msg.includes("❌ No valid sessions")) {
         setMessage("");
         setError("You are not yet assigned to any modules.");
         setTimetable([]);
-        setGenerating(false);
-        return;
-      }
-
-      if (msg.includes("✅")) {
+      } else if (msg.includes("✅")) {
+        setMessage("✅ Timetable generated successfully! Refreshing...");
         setTimeout(() => {
           fetchTimetable();
           setGenerating(false);
@@ -91,19 +105,74 @@ const LecturerTimetable = () => {
         }, 3000);
       } else {
         setMessage(msg);
-        setGenerating(false);
       }
     } catch (err) {
       console.error("Error generating timetable", err);
       setMessage("");
       setError("❌ Failed to generate timetable.");
+    } finally {
       setGenerating(false);
     }
   };
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     const element = document.getElementById("timetable-container");
-    html2pdf().from(element).save("Lecturer-Timetable.pdf");
+
+    const clone = element.cloneNode(true);
+    clone.style.position = "absolute";
+    clone.style.left = "-9999px";
+    clone.style.top = "0";
+    clone.style.padding = "20px";
+    clone.style.backgroundColor = "#ffffff";
+    document.body.appendChild(clone);
+
+    try {
+      const canvas = await html2canvas(clone, { scale: 2 });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("landscape", "pt", "a4");
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const contentWidth = pdfWidth - 40;
+      const canvasHeight = (canvas.height * contentWidth) / canvas.width;
+
+      // 🧑‍🏫 Get lecturer name
+      const lecturerName = user?.fullName || user?.name || "Lecturer";
+
+      // 🗓 Date range
+      const today = new Date();
+      const monday = new Date(today);
+      monday.setDate(today.getDate() - today.getDay() + 1);
+      const saturday = new Date(monday);
+      saturday.setDate(monday.getDate() + 5);
+
+      const formatDate = (d) =>
+        d.toLocaleDateString("en-GB", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        });
+
+      const range = `${formatDate(monday)} – ${formatDate(saturday)}`;
+      const title = `Lecturer Timetable for ${lecturerName}`;
+      const subtitle = `Week: ${range}`;
+
+      // 📝 Titles
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(18);
+      pdf.text(title, pdfWidth / 2, 40, { align: "center" });
+
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(12);
+      pdf.text(subtitle, pdfWidth / 2, 60, { align: "center" });
+
+      // 📄 Image
+      pdf.addImage(imgData, "PNG", 20, 80, contentWidth, canvasHeight);
+      pdf.save("Lecturer-Timetable.pdf");
+    } catch (err) {
+      console.error("❌ PDF generation failed:", err);
+    } finally {
+      document.body.removeChild(clone);
+    }
   };
 
   const getSessionsByDay = (day) => {
@@ -267,6 +336,51 @@ const LecturerTimetable = () => {
                   </tr>
                 </tbody>
               </table>
+              {events.length > 0 && (
+                <div className="mt-10">
+                  <h2 className="text-xl font-semibold mb-3">
+                    🎉 Upcoming Events
+                  </h2>
+                  <table className="w-full border border-gray-300">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th className="border px-3 py-2">Event</th>
+                        <th className="border px-3 py-2">Date</th>
+                        <th className="border px-3 py-2">Time</th>
+                        <th className="border px-3 py-2">Mode</th>
+                        <th className="border px-3 py-2">Location</th>
+                        <th className="border px-3 py-2">Organizers</th>
+                        <th className="border px-3 py-2">Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {events.map((event) => (
+                        <tr key={event.eventId}>
+                          <td className="border px-3 py-2">
+                            {event.eventName}
+                          </td>
+                          <td className="border px-3 py-2">
+                            {new Date(event.eventDate).toLocaleDateString()}
+                          </td>
+                          <td className="border px-3 py-2">
+                            {event.eventTime}
+                          </td>
+                          <td className="border px-3 py-2">
+                            {event.eventMode}
+                          </td>
+                          <td className="border px-3 py-2">{event.location}</td>
+                          <td className="border px-3 py-2">
+                            {event.orgCommittee}
+                          </td>
+                          <td className="border px-3 py-2">
+                            {event.description}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </>
         )}

@@ -14,29 +14,13 @@ import { RiFileList3Line } from "react-icons/ri";
 const DynamicSidebar = ({ user }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [documentHeight, setDocumentHeight] = useState(
+    document.documentElement.scrollHeight
+  );
   const navigate = useNavigate();
-  const role = user?.role?.toLowerCase(); // ✅ Normalize role
+  const role = user?.role?.toLowerCase();
 
-  useEffect(() => {
-    const handleResize = () => {
-      const mobile = window.innerWidth < 768;
-      setIsMobile(mobile);
-      if (!mobile) setIsOpen(true);
-    };
-
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  const toggleSidebar = () => setIsOpen(!isOpen);
-
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
-    navigate("/login");
-  };
-
+  // Define navItems before using it in the component
   const navItems = [
     // 🎓 Student & Lecturer Routes
     {
@@ -89,7 +73,6 @@ const DynamicSidebar = ({ user }) => {
       icon: <MdDashboard className="text-xl" />,
       roles: ["superadmin"],
     },
-
     {
       path: "/superadmin/schedule/generate",
       name: "Generate Timetables",
@@ -102,13 +85,38 @@ const DynamicSidebar = ({ user }) => {
       icon: <MdDashboard className="text-xl" />,
       roles: ["superadmin"],
     },
-    {
-      path: "/superadmin/schedule/conflicts",
-      name: "Conflict Report",
-      icon: <MdEditCalendar className="text-xl" />,
-      roles: ["superadmin"],
-    },
   ];
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (!mobile) setIsOpen(true);
+    };
+
+    const handleScrollOrResize = () => {
+      setDocumentHeight(document.documentElement.scrollHeight);
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    window.addEventListener("resize", handleScrollOrResize);
+    window.addEventListener("scroll", handleScrollOrResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("resize", handleScrollOrResize);
+      window.removeEventListener("scroll", handleScrollOrResize);
+    };
+  }, []);
+
+  const toggleSidebar = () => setIsOpen(!isOpen);
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+    navigate("/login");
+  };
 
   return (
     <>
@@ -135,26 +143,30 @@ const DynamicSidebar = ({ user }) => {
         </div>
       )}
 
-      {/* 🧭 Sidebar */}
+      {/* � Sidebar */}
       <div
-        className={`fixed md:relative z-30 w-72 h-screen bg-gradient-to-b from-indigo-700 to-indigo-800 text-white flex flex-col transition-all duration-300 ease-in-out ${
+        className={`fixed md:relative z-30 w-72 flex flex-col transition-all duration-300 ease-in-out ${
           isOpen ? "left-0" : "-left-72"
         } md:left-0 shadow-xl`}
+        style={{
+          height: isMobile ? `calc(100vh - 64px)` : `${documentHeight}px`,
+          minHeight: "100vh",
+          top: isMobile ? "64px" : "0",
+          background: "linear-gradient(to bottom, #4f46e5, #4338ca)",
+        }}
       >
         <div className="flex flex-col items-center py-6 px-4 h-full overflow-y-auto">
           {/* 🖼️ Logo */}
-          <div
-            className={`items-center justify-center mb-8 ${
-              isMobile ? "hidden" : "flex"
-            }`}
-          >
-            <img
-              src={logo}
-              alt="Logo"
-              className="w-30 h-16 object-contain"
-              style={{ filter: "brightness(0) invert(1)" }}
-            />
-          </div>
+          {!isMobile && (
+            <div className="flex items-center justify-center mb-8">
+              <img
+                src={logo}
+                alt="Logo"
+                className="w-30 h-16 object-contain"
+                style={{ filter: "brightness(0) invert(1)" }}
+              />
+            </div>
+          )}
 
           {/* 👤 User Info */}
           <div className="text-center mb-8 px-4 py-4 bg-indigo-600 rounded-xl w-full">

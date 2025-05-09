@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom"; // Import useNavigate for navigation
 
 const AddUser = () => {
+  const navigate = useNavigate(); // Initialize navigate
   const [user, setUser] = useState({
     fullName: "",
     email: "",
@@ -94,6 +96,29 @@ const AddUser = () => {
     >
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-between items-center">
+          <button
+            onClick={() => navigate(-1)} // Go back to previous page
+            className={`p-2 rounded-md ${
+              darkMode
+                ? "text-white hover:bg-gray-700"
+                : "text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10 19l-7-7m0 0l7-7m-7 7h18"
+              />
+            </svg>
+          </button>
           <h2
             className={`mt-6 text-center text-3xl font-extrabold ${
               darkMode ? "text-white" : "text-gray-900"
@@ -236,7 +261,9 @@ const AddUser = () => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-2 px-4 bg-blue-600 text-white rounded-md"
+              className={`w-full py-2 px-4 rounded-md ${
+                isSubmitting ? "bg-blue-400" : "bg-blue-600 hover:bg-blue-700"
+              } text-white transition-colors`}
             >
               {isSubmitting ? "Processing..." : "Add User"}
             </button>

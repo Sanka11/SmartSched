@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -11,16 +11,25 @@ import {
   BookOpenIcon,
   ExclamationTriangleIcon,
   Bars3Icon,
+  ChevronUpIcon,
+  ChevronDownIcon,
+  ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import SideNav from "./SideNav";
 import api from "../services/api";
 
 const StudentEnrollment = () => {
+  // State management
   const [users, setUsers] = useState([]);
   const [students, setStudents] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState({
+    users: true,
+    students: true,
+    courses: true,
+    enrollments: false,
+  });
   const [error, setError] = useState(null);
   const [courses, setCourses] = useState([]);
   const [groups, setGroups] = useState({});
@@ -30,118 +39,133 @@ const StudentEnrollment = () => {
     data: null,
     callback: null,
   });
-  const [isSearchActive, setIsSearchActive] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
-  // Fetch users and students from the backend API
+  // Table state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  const [sortConfig, setSortConfig] = useState({
+    key: "fullName",
+    direction: "ascending",
+  });
+
+  // Fetch data with optimized loading states
   useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setError("Unauthorized access. Please login again.");
+      setLoading({ users: false, students: false, courses: false });
+      return;
+    }
+
     const fetchData = async () => {
-      const token = localStorage.getItem("token"); // 🛑 must get token
-
-      if (!token) {
-        console.error("No token found. User must login again.");
-        setError("Unauthorized access. Please login again.");
-        setLoading(false);
-        return;
-      }
-
       try {
-        const [usersResponse, studentsResponse] = await Promise.all([
-          api.get("/api/users", {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }),
-          api.get("/api/student-enrollments", {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }),
-        ]);
+        // Fetch users and students in parallel
+        const [usersResponse, studentsResponse, coursesResponse] =
+          await Promise.all([
+            api.get("/api/users", {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+            api.get("/api/student-enrollments", {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+            api.get("/api/allcourses", {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+          ]);
 
         setUsers(
           usersResponse.data.filter(
             (user) => user?.role === "student" && user?.fullName
           )
         );
-        const studentsWithDefaults = studentsResponse.data.map((student) => ({
-          ...student,
-          fullName: student.firstName + " " + student.lastName,
-          courseClasses: student.courseClasses || {},
-          courseModules: student.courseModules || {},
-        }));
-        setStudents(studentsWithDefaults);
-        setLoading(false);
+
+        setStudents(
+          studentsResponse.data.map((student) => ({
+            ...student,
+            fullName: `${student.firstName} ${student.lastName}`,
+            courseClasses: student.courseClasses || {},
+            courseModules: student.courseModules || {},
+          }))
+        );
+
+        setCourses(coursesResponse.data);
+
+        setLoading({ users: false, students: false, courses: false });
       } catch (err) {
-        console.error("Error fetching users/students:", err);
-        setError("Failed to fetch users/students. " + err.message);
-        setLoading(false);
+        console.error("Error fetching data:", err);
+        setError("Failed to fetch data. " + err.message);
+        setLoading({ users: false, students: false, courses: false });
+        toast.error("Failed to load data");
       }
     };
 
     fetchData();
   }, []);
 
-  // Fetch courses from the backend
-  useEffect(() => {
-    const fetchCourses = async () => {
-      const token = localStorage.getItem("token");
+  // Sort users based on sort configuration
+  const sortedUsers = useMemo(() => {
+    let sortableUsers = [...users];
+    if (sortConfig.key) {
+      sortableUsers.sort((a, b) => {
+        if (a[sortConfig.key] < b[sortConfig.key]) {
+          return sortConfig.direction === "ascending" ? -1 : 1;
+        }
+        if (a[sortConfig.key] > b[sortConfig.key]) {
+          return sortConfig.direction === "ascending" ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableUsers;
+  }, [users, sortConfig]);
 
-      if (!token) {
-        console.error("No token found. User must login again.");
-        toast.error("Unauthorized. Please login again.");
-        return;
-      }
+  // Filter users based on search query
+  const filteredUsers = useMemo(() => {
+    return sortedUsers.filter((user) => {
+      const fullName = user?.fullName?.toLowerCase() || "";
+      const email = user?.email?.toLowerCase() || "";
+      const search = searchQuery.toLowerCase();
+      return fullName.includes(search) || email.includes(search);
+    });
+  }, [sortedUsers, searchQuery]);
 
-      try {
-        const response = await api.get("/api/allcourses", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        setCourses(response.data);
-      } catch (err) {
-        console.error("Error fetching courses:", err);
-        toast.error("Failed to fetch courses. " + err.message);
-      }
-    };
+  // Pagination
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const currentUsers = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredUsers.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredUsers, currentPage, itemsPerPage]);
 
-    fetchCourses();
-  }, []);
-
-  // Filter students based on search query
-  const filteredUsers = users.filter((user) => {
-    const fullName = user?.fullName || "";
-    const email = user?.email || "";
-    return (
-      fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      email.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  });
-
-  // Handle search input change
-  const handleSearchChange = (e) => {
-    setSearchQuery(e.target.value);
-    setIsSearchActive(e.target.value.length > 0);
+  // Handle sort request
+  const requestSort = (key) => {
+    let direction = "ascending";
+    if (sortConfig.key === key && sortConfig.direction === "ascending") {
+      direction = "descending";
+    }
+    setSortConfig({ key, direction });
   };
 
   // Handle user selection
   const handleUserSelect = async (user) => {
     if (!user) return;
 
+    setLoading((prev) => ({ ...prev, enrollments: true }));
+
     try {
-      // Check if this user is already a student (has enrollments)
       const existingStudent = students.find(
         (student) => student.email === user.email
       );
 
       if (existingStudent) {
         setSelectedUser(existingStudent);
-        // Fetch groups for all courses of the selected student
-        existingStudent.courses.forEach((courseName) => {
-          fetchGroupsForCourse(courseName);
-        });
+        // Fetch groups for all courses in parallel
+        await Promise.all(
+          existingStudent.courses.map((courseName) =>
+            fetchGroupsForCourse(courseName)
+          )
+        );
       } else {
         setSelectedUser({
           ...user,
@@ -152,11 +176,13 @@ const StudentEnrollment = () => {
       }
     } catch (err) {
       console.error("Error selecting user:", err);
-      toast.error("Failed to select user");
+      toast.error("Failed to load user enrollments");
+    } finally {
+      setLoading((prev) => ({ ...prev, enrollments: false }));
     }
   };
 
-  // Fetch groups for a specific course
+  // Fetch groups for a course
   const fetchGroupsForCourse = async (courseName) => {
     try {
       const selectedCourse = courses.find(
@@ -174,7 +200,7 @@ const StudentEnrollment = () => {
     }
   };
 
-  // Confirmation dialog
+  // Confirmation dialog handlers
   const showConfirmation = (type, data, callback) => {
     setDeleteConfirmation({ show: true, type, data, callback });
   };
@@ -195,7 +221,7 @@ const StudentEnrollment = () => {
       return;
     }
 
-    const token = localStorage.getItem("token"); // ✅ must get token
+    const token = localStorage.getItem("token");
 
     let student = students.find(
       (student) => student.email === selectedUser.email
@@ -471,7 +497,7 @@ const StudentEnrollment = () => {
     }
   };
 
-  if (loading) {
+  if (loading.users || loading.students || loading.courses) {
     return (
       <div className="flex min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
         <SideNav
@@ -485,7 +511,10 @@ const StudentEnrollment = () => {
             sidebarOpen ? "lg:ml-64" : "lg:ml-20"
           }`}
         >
-          <div className="text-center py-8">Loading...</div>
+          <div className="text-center py-8">
+            <ArrowPathIcon className="w-10 h-10 text-blue-500 animate-spin mx-auto" />
+            <p className="mt-4 text-gray-600">Loading student data...</p>
+          </div>
         </div>
       </div>
     );
@@ -505,18 +534,14 @@ const StudentEnrollment = () => {
             sidebarOpen ? "lg:ml-64" : "lg:ml-20"
           }`}
         >
-          <div className="text-center py-8 text-red-500">Error: {error}</div>
+          <div className="text-center py-8 text-red-500">
+            <ExclamationTriangleIcon className="w-10 h-10 mx-auto" />
+            <p className="mt-4">Error: {error}</p>
+          </div>
         </div>
       </div>
     );
   }
-
-  // Determine which users to display - hide others when a student is selected
-  const displayedUsers = selectedUser
-    ? []
-    : isSearchActive
-    ? filteredUsers
-    : filteredUsers.slice(0, 6);
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
@@ -535,7 +560,7 @@ const StudentEnrollment = () => {
         <div className="p-4 lg:p-8 w-full">
           <ToastContainer position="top-right" autoClose={3000} />
 
-          {/* Mobile header with toggle button */}
+          {/* Mobile header */}
           <div className="lg:hidden flex items-center mb-6">
             <button
               onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
@@ -604,56 +629,238 @@ const StudentEnrollment = () => {
             </div>
           )}
 
-          {/* Search Bar - Only show when no student is selected */}
-          {!selectedUser && (
-            <div className="mb-8 relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+          {/* Main Content Area */}
+          {!selectedUser ? (
+            <div className="bg-white rounded-2xl shadow-xl p-6">
+              {/* Search and Controls */}
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+                <div className="relative flex-1 max-w-md">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search students by name or email..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div className="text-sm text-gray-500">
+                  Showing {currentUsers.length} of {filteredUsers.length}{" "}
+                  students
+                </div>
               </div>
-              <input
-                type="text"
-                placeholder="Search students..."
-                value={searchQuery}
-                onChange={handleSearchChange}
-                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/50 backdrop-blur-sm"
-              />
-            </div>
-          )}
 
-          {/* Student Cards - Only show when no student is selected */}
-          {!selectedUser && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-              {displayedUsers.map((user) => (
-                <div
-                  key={user._id || user.email}
-                  onClick={() => handleUserSelect(user)}
-                  className={`group p-6 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer border-2 border-transparent hover:border-blue-200`}
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="p-3 bg-blue-100 rounded-xl">
-                      <UserCircleIcon className="w-8 h-8 text-blue-600" />
+              {/* Students Table */}
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                        onClick={() => requestSort("fullName")}
+                      >
+                        <div className="flex items-center">
+                          Student Name
+                          {sortConfig.key === "fullName" &&
+                            (sortConfig.direction === "ascending" ? (
+                              <ChevronUpIcon className="ml-1 w-4 h-4" />
+                            ) : (
+                              <ChevronDownIcon className="ml-1 w-4 h-4" />
+                            ))}
+                        </div>
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                        onClick={() => requestSort("email")}
+                      >
+                        <div className="flex items-center">
+                          Email
+                          {sortConfig.key === "email" &&
+                            (sortConfig.direction === "ascending" ? (
+                              <ChevronUpIcon className="ml-1 w-4 h-4" />
+                            ) : (
+                              <ChevronDownIcon className="ml-1 w-4 h-4" />
+                            ))}
+                        </div>
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        Status
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        Enrolled Courses
+                      </th>
+                      <th scope="col" className="relative px-6 py-3">
+                        <span className="sr-only">Actions</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {currentUsers.length > 0 ? (
+                      currentUsers.map((user) => {
+                        const isEnrolled = students.some(
+                          (student) => student.email === user.email
+                        );
+                        const student = students.find(
+                          (student) => student.email === user.email
+                        );
+                        const enrolledCount = student?.courses?.length || 0;
+
+                        return (
+                          <tr
+                            key={user._id || user.email}
+                            className="hover:bg-gray-50 transition-colors"
+                          >
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                  <UserCircleIcon className="h-6 w-6 text-blue-600" />
+                                </div>
+                                <div className="ml-4">
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {user.fullName}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">
+                                {user.email}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span
+                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                  isEnrolled
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-yellow-100 text-yellow-800"
+                                }`}
+                              >
+                                {isEnrolled ? "Enrolled" : "Not Enrolled"}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-500">
+                                {enrolledCount} course
+                                {enrolledCount !== 1 ? "s" : ""}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                              <button
+                                onClick={() => handleUserSelect(user)}
+                                className="text-blue-600 hover:text-blue-900"
+                              >
+                                Manage
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan="5"
+                          className="px-6 py-4 text-center text-sm text-gray-500"
+                        >
+                          {searchQuery
+                            ? "No matching students found"
+                            : "No students available"}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              {filteredUsers.length > itemsPerPage && (
+                <div className="flex items-center justify-between mt-4 px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
+                  <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm text-gray-700">
+                        Showing{" "}
+                        <span className="font-medium">
+                          {(currentPage - 1) * itemsPerPage + 1}
+                        </span>{" "}
+                        to{" "}
+                        <span className="font-medium">
+                          {Math.min(
+                            currentPage * itemsPerPage,
+                            filteredUsers.length
+                          )}
+                        </span>{" "}
+                        of{" "}
+                        <span className="font-medium">
+                          {filteredUsers.length}
+                        </span>{" "}
+                        results
+                      </p>
                     </div>
                     <div>
-                      <h2 className="text-xl font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
-                        {user.fullName}
-                      </h2>
-                      <p className="text-gray-500 text-sm">{user.email}</p>
-                      {students.some(
-                        (student) => student.email === user.email
-                      ) && (
-                        <span className="inline-block mt-1 px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
-                          Enrolled
-                        </span>
-                      )}
+                      <nav
+                        className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
+                        aria-label="Pagination"
+                      >
+                        <button
+                          onClick={() =>
+                            setCurrentPage((prev) => Math.max(prev - 1, 1))
+                          }
+                          disabled={currentPage === 1}
+                          className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <span className="sr-only">Previous</span>
+                          <ChevronUpIcon
+                            className="h-5 w-5 transform -rotate-90"
+                            aria-hidden="true"
+                          />
+                        </button>
+                        {Array.from(
+                          { length: totalPages },
+                          (_, i) => i + 1
+                        ).map((page) => (
+                          <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                              currentPage === page
+                                ? "z-10 bg-blue-50 border-blue-500 text-blue-600"
+                                : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        ))}
+                        <button
+                          onClick={() =>
+                            setCurrentPage((prev) =>
+                              Math.min(prev + 1, totalPages)
+                            )
+                          }
+                          disabled={currentPage === totalPages}
+                          className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <span className="sr-only">Next</span>
+                          <ChevronDownIcon
+                            className="h-5 w-5 transform -rotate-90"
+                            aria-hidden="true"
+                          />
+                        </button>
+                      </nav>
                     </div>
                   </div>
                 </div>
-              ))}
+              )}
             </div>
-          )}
-
-          {/* Selected Student Details */}
-          {selectedUser && (
+          ) : (
             <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
               <div className="flex items-center justify-between mb-6">
                 <div>

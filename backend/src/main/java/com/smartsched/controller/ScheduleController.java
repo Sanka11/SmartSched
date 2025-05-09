@@ -1,8 +1,11 @@
 package com.smartsched.controller;
 
+import com.smartsched.model.GeneratedSchedule;
+import com.smartsched.repository.GeneratedScheduleRepository;
 import com.smartsched.service.ScheduleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,6 +23,10 @@ public class ScheduleController {
 
     @Autowired
     private ScheduleService scheduleService;
+
+    @Autowired
+    private GeneratedScheduleRepository scheduleRepo;
+
 
     {/*@GetMapping("/student/{email}")
     public Map<String, List<Map<String, Object>>> getStudentTimetable(@PathVariable String email) {
@@ -69,5 +76,20 @@ public class ScheduleController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("❌ Failed to run scheduler: " + e.getMessage());
         }
+        
     }
+    
+    @GetMapping("/all")
+    @PreAuthorize("permitAll()")
+        public List<GeneratedSchedule> getAllSchedules() {
+            return scheduleRepo.findAll();
+    }
+
+    @PreAuthorize("hasRole('SUPERADMIN')")
+    @GetMapping("/conflicts")
+        public ResponseEntity<List<Map<String, Object>>> getScheduleConflicts() {
+            List<Map<String, Object>> conflicts = scheduleService.getScheduleConflicts();
+            return ResponseEntity.ok(conflicts);
+    }
+
 }

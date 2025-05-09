@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import html2pdf from "html2pdf.js";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 import DynamicSidebar from "../components/DynamicSidebar";
 
 const days = [
@@ -10,7 +11,6 @@ const days = [
   "Thursday",
   "Friday",
   "Saturday",
-  "TBD",
 ];
 
 const colors = [
@@ -28,6 +28,7 @@ const colors = [
 
 const StudentTimetable = () => {
   const [timetable, setTimetable] = useState([]);
+  const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [message, setMessage] = useState("");
@@ -56,18 +57,18 @@ const StudentTimetable = () => {
       );
 
       const result = response.data || {};
-      const sessions = result.timetable || [];
+      setTimetable(result.timetable || []);
+      const now = new Date();
+      const upcomingEvents = (result.events || []).filter((event) => {
+        const eventDateTime = new Date(`${event.eventDate}T${event.eventTime}`);
+        return eventDateTime >= now;
+      });
+      setEvents(upcomingEvents);
 
-      console.log("✅ Loaded timetable sessions:", sessions);
-      setTimetable(sessions);
-
-      if (sessions.length === 0) {
+      if (result.timetable.length === 0) {
         setError("⚠️ You are not yet assigned to any modules.");
-      } else {
-        setError("");
       }
     } catch (err) {
-      console.error("❌ Failed to fetch timetable:", err);
       setError("❌ Failed to fetch timetable from server.");
     } finally {
       setLoading(false);
@@ -94,6 +95,7 @@ const StudentTimetable = () => {
         setError("You are not yet assigned to any modules.");
         setTimetable([]);
       } else if (msg.includes("✅")) {
+        setMessage("✅ Timetable generated successfully! Refreshing...");
         setTimeout(() => {
           fetchTimetable();
           setGenerating(false);
@@ -101,71 +103,88 @@ const StudentTimetable = () => {
         }, 3000);
       } else {
         setMessage(msg);
+        setGenerating(false);
       }
     } catch (err) {
-      console.error("Error generating timetable", err);
       setMessage("");
       setError("❌ Failed to generate timetable.");
-    } finally {
       setGenerating(false);
     }
   };
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     const element = document.getElementById("timetable-container");
-    html2pdf().from(element).save("Student-Timetable.pdf");
+
+    const clone = element.cloneNode(true);
+    clone.style.position = "absolute";
+    clone.style.left = "-9999px";
+    clone.style.top = "0";
+    clone.style.padding = "20px";
+    clone.style.backgroundColor = "#ffffff";
+    document.body.appendChild(clone);
+
+    try {
+      const canvas = await html2canvas(clone, { scale: 2 });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("landscape", "pt", "a4");
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const contentWidth = pdfWidth - 40;
+      const canvasHeight = (canvas.height * contentWidth) / canvas.width;
+
+      // 🗓 Calculate date range: Monday to Saturday of current week
+      const today = new Date();
+      const monday = new Date(today);
+      monday.setDate(today.getDate() - today.getDay() + 1); // Monday
+      const saturday = new Date(monday);
+      saturday.setDate(monday.getDate() + 5); // Saturday
+
+      const formatDate = (d) =>
+        d.toLocaleDateString("en-GB", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        });
+
+      const range = `${formatDate(monday)} – ${formatDate(saturday)}`;
+      const title = `Your Weekly Timetable for ${range}`;
+
+      // 📝 Draw title
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(18);
+      pdf.text(title, pdfWidth / 2, 40, { align: "center" });
+
+      // 🖼️ Draw timetable image below title
+      pdf.addImage(imgData, "PNG", 20, 60, contentWidth, canvasHeight);
+      pdf.save("Student-Timetable.pdf");
+    } catch (err) {
+      console.error("❌ PDF generation failed:", err);
+    } finally {
+      document.body.removeChild(clone);
+    }
   };
 
   useEffect(() => {
-    if (token && email) {
-      fetchTimetable();
-    } else {
-      setError("User not authenticated. Please log in again.");
-    }
+    fetchTimetable();
   }, []);
 
   const moduleColorMap = {};
-  let colorIndex = 0;
-  timetable.forEach((session) => {
-    const module = session.module_name || "Unknown Module";
-    if (!moduleColorMap[module]) {
-      moduleColorMap[module] = colors[colorIndex % colors.length];
-      colorIndex++;
-    }
+  timetable.forEach((session, idx) => {
+    const module = session.module_name || `Module ${idx}`;
+    moduleColorMap[module] =
+      moduleColorMap[module] || colors[idx % colors.length];
   });
 
-  const getSessionTypeIcon = (session) => {
-    const location = session.location?.toLowerCase() || "";
-    if (location.includes("lab")) return "🧪";
-    if (location.includes("zoom") || location.includes("online")) return "💻";
-    if (session.event) return "🎉";
-    return "🎓";
-  };
-
-  const getSessionsByDay = (day) => {
-    const filtered = timetable.filter(
-      (s) => (s.day || "").toLowerCase() === day.toLowerCase()
-    );
-
-    // Remove duplicates based on composite key
-    const seen = new Set();
-    const unique = [];
-    filtered.forEach((s) => {
-      const key = `${s.module_id}-${s.group_id}-${s.day}-${s.start_time}-${s.instructor_id}`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        unique.push(s);
-      }
-    });
-
-    return unique.sort((a, b) => a.start_time.localeCompare(b.start_time));
-  };
+  const getSessionsByDay = (day) =>
+    timetable
+      .filter((s) => s.day?.toLowerCase() === day.toLowerCase())
+      .sort((a, b) => a.start_time.localeCompare(b.start_time));
 
   return (
     <div className="flex min-h-screen bg-gray-50">
       <DynamicSidebar user={user} />
 
-      <main className="flex-1 p-6">
+      <main className="flex-1 p-4 md:p-6">
         <h1 className="text-2xl font-semibold mb-4">
           📅 Your Weekly Timetable
         </h1>
@@ -173,27 +192,18 @@ const StudentTimetable = () => {
         {loading ? (
           <p>Loading...</p>
         ) : error ? (
-          <div className="bg-yellow-50 p-4 rounded-lg text-center">
-            <p className="mb-2 text-red-600">{error}</p>
-            <button
-              onClick={handleGenerateTimetable}
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
-              disabled={generating}
-            >
-              {generating ? "Generating..." : "Generate Timetable"}
-            </button>
-            {message && <p className="mt-3 text-sm text-gray-700">{message}</p>}
-          </div>
+          <div className="bg-red-50 p-4 rounded">{error}</div>
         ) : (
           <>
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex gap-2 mb-4">
               <button
                 onClick={handleGenerateTimetable}
-                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50"
                 disabled={generating}
+                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50"
               >
-                {generating ? "Regenerating..." : "🔁 Generate Again"}
+                {generating ? "🔄 Generating..." : "🔁 Generate Timetable"}
               </button>
+
               <button
                 onClick={handleDownloadPDF}
                 className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
@@ -202,15 +212,12 @@ const StudentTimetable = () => {
               </button>
             </div>
 
-            <div id="timetable-container" className="overflow-x-auto">
+            <div id="timetable-container" className="overflow-auto">
               <table className="w-full border border-gray-300">
-                <thead>
-                  <tr className="bg-gray-100">
+                <thead className="bg-gray-100">
+                  <tr>
                     {days.map((day) => (
-                      <th
-                        key={day}
-                        className="border border-gray-300 px-4 py-2 text-left"
-                      >
+                      <th key={day} className="border px-4 py-2">
                         {day}
                       </th>
                     ))}
@@ -218,77 +225,84 @@ const StudentTimetable = () => {
                 </thead>
                 <tbody>
                   <tr>
-                    {days.map((day) => {
-                      const sessions = getSessionsByDay(day);
-                      return (
-                        <td
-                          key={day}
-                          className="border border-gray-200 px-3 py-2 align-top text-sm min-w-[200px]"
-                        >
-                          {sessions.length > 0 ? (
-                            sessions.map((session, idx) => {
-                              const bgColor =
-                                moduleColorMap[session.module_name] ||
-                                "bg-gray-100";
-                              return (
-                                <div
-                                  key={idx}
-                                  className={`pb-2 px-2 py-1 rounded ${bgColor} ${
-                                    idx !== sessions.length - 1
-                                      ? "border-b border-gray-200 mb-4"
-                                      : ""
-                                  }`}
-                                  title={`${session.module_name} • ${session.group_name} • ${session.location} • ${session.instructor_name}`}
-                                >
-                                  <strong>
-                                    {getSessionTypeIcon(session)}{" "}
-                                    {session.module_name || "Unnamed Module"}
-                                  </strong>
-                                  <br />
-                                  {session.group_name || "Group TBD"}
-                                  <br />
-                                  🕒 {session.start_time}–{session.end_time}
-                                  <br />
-                                  🏫 {session.location || "TBD"}
-                                  <br />
-                                  👨‍🏫 {session.instructor_name || "TBD"}
-                                  {session.event && (
-                                    <div className="mt-2 text-xs bg-gray-50 border p-1 rounded">
-                                      🎉{" "}
-                                      <strong>{session.event.eventName}</strong>
-                                      <br />
-                                      🗓{" "}
-                                      {new Date(
-                                        session.event.eventDate
-                                      ).toLocaleDateString()}{" "}
-                                      {new Date(
-                                        session.event.eventTime
-                                      ).toLocaleTimeString()}
-                                      <br />
-                                      📍 {session.event.eventMode} -{" "}
-                                      {session.event.location}
-                                      <br />
-                                      📝 {session.event.description}
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })
-                          ) : (
-                            <span className="text-gray-400 italic">—</span>
-                          )}
-                        </td>
-                      );
-                    })}
+                    {days.map((day) => (
+                      <td
+                        key={day}
+                        className="border px-2 py-2 align-top min-w-[180px]"
+                      >
+                        {getSessionsByDay(day).map((session, idx) => (
+                          <div
+                            key={idx}
+                            className={`mb-3 p-2 rounded ${
+                              moduleColorMap[session.module_name]
+                            }`}
+                          >
+                            <strong>{session.module_name}</strong>
+                            <br />
+                            <small>{session.group_name}</small>
+                            <br />
+                            <small>
+                              🕒 {session.start_time}–{session.end_time}
+                            </small>
+                            <br />
+                            <small>🏫 {session.location}</small>
+                            <br />
+                            <small>👨‍🏫 {session.instructor_name}</small>
+                          </div>
+                        ))}
+                      </td>
+                    ))}
                   </tr>
                 </tbody>
               </table>
+
+              {events.length > 0 && (
+                <div className="mt-8">
+                  <h2 className="text-xl font-semibold mb-4">
+                    🎉 Upcoming Events
+                  </h2>
+                  <table className="w-full border border-gray-300">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th className="border px-3 py-2">Event</th>
+                        <th className="border px-3 py-2">Date</th>
+                        <th className="border px-3 py-2">Time</th>
+                        <th className="border px-3 py-2">Mode</th>
+                        <th className="border px-3 py-2">Location</th>
+                        <th className="border px-3 py-2">Organizers</th>
+                        <th className="border px-3 py-2">Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {events.map((event) => (
+                        <tr key={event.eventId}>
+                          <td className="border px-3 py-2">
+                            {event.eventName}
+                          </td>
+                          <td className="border px-3 py-2">
+                            {new Date(event.eventDate).toLocaleDateString()}
+                          </td>
+                          <td className="border px-3 py-2">
+                            {event.eventTime}
+                          </td>
+                          <td className="border px-3 py-2">
+                            {event.eventMode}
+                          </td>
+                          <td className="border px-3 py-2">{event.location}</td>
+                          <td className="border px-3 py-2">
+                            {event.orgCommittee}
+                          </td>
+                          <td className="border px-3 py-2">
+                            {event.description}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </>
-        )}
-
-        {!loading && message && !error && (
-          <p className="mt-4 text-sm text-gray-600 text-center">{message}</p>
         )}
       </main>
     </div>

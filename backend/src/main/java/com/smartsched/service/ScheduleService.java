@@ -94,5 +94,33 @@ public class ScheduleService {
         return Collections.singletonMap("timetable", filtered);
     }
 
+    public List<GeneratedSchedule> getAllSchedules() {
+        return scheduleRepo.findAll();
+    }
+
+    public List<Map<String, Object>> getScheduleConflicts() {
+        List<GeneratedSchedule> allSchedules = scheduleRepo.findAll();
+    
+        Map<String, List<Map<String, Object>>> groupedByTimeSlot = new HashMap<>();
+        for (GeneratedSchedule schedule : allSchedules) {
+            for (Map<String, Object> session : schedule.getTimetable()) {
+                String key = session.get("day") + "-" + session.get("start_time") + "-" + session.get("end_time") + "-" + session.get("location");
+                groupedByTimeSlot.computeIfAbsent(key, k -> new ArrayList<>()).add(session);
+            }
+        }
+    
+        List<Map<String, Object>> conflicts = new ArrayList<>();
+        for (Map.Entry<String, List<Map<String, Object>>> entry : groupedByTimeSlot.entrySet()) {
+            if (entry.getValue().size() > 1) {
+                Map<String, Object> conflict = new HashMap<>();
+                conflict.put("timeSlot", entry.getKey());
+                conflict.put("sessions", entry.getValue());
+                conflicts.add(conflict);
+            }
+        }
+    
+        return conflicts;
+    }
+    
     
 }

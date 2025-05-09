@@ -8,6 +8,8 @@ import {
   ExclamationTriangleIcon,
   Bars3Icon,
   XMarkIcon,
+  PencilSquareIcon,
+  ArrowLeftIcon,
 } from "@heroicons/react/24/outline";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -22,9 +24,10 @@ const AssignInstructor = () => {
   const [selectedCourse, setSelectedCourse] = useState("");
   const [selectedModule, setSelectedModule] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [isSearchActive, setIsSearchActive] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [usersPerPage] = useState(10);
 
   // Confirmation modal state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -40,9 +43,6 @@ const AssignInstructor = () => {
       setIsLoading(true);
       const token = localStorage.getItem("token");
       const userRole = JSON.parse(localStorage.getItem("user"))?.role || "";
-      console.log("AssignInstructor useEffect running...");
-      console.log("Token value is:", token);
-      console.log("User role is:", userRole);
 
       const headers = {
         "Content-Type": "application/json",
@@ -64,7 +64,6 @@ const AssignInstructor = () => {
           if (resUsers.ok) setUsers(await resUsers.json());
           else throw new Error("Failed to fetch users");
         }
-
         const resInstructors = await fetch(
           "http://localhost:8080/api/instructors",
           { headers }
@@ -92,21 +91,21 @@ const AssignInstructor = () => {
   const filteredUsers = users.filter(
     (user) =>
       user.role === "lecturer" &&
-      user.fullName.toLowerCase().includes(searchQuery.toLowerCase())
+      (user.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchQuery.toLowerCase()))
   );
+
+  // Pagination logic
+  const indexOfLastUser = currentPage * usersPerPage;
+  const indexOfFirstUser = indexOfLastUser - usersPerPage;
+  const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
+  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
 
   // Handle search input change
   const handleSearchChange = (e) => {
     setSearchQuery(e.target.value);
-    setIsSearchActive(e.target.value.length > 0);
+    setCurrentPage(1); // Reset to first page on new search
   };
-
-  // Determine which users to display - hide others when an instructor is selected
-  const displayedUsers = selectedUser
-    ? []
-    : isSearchActive
-    ? filteredUsers
-    : filteredUsers.slice(0, 6);
 
   // Handle user selection
   const handleUserSelect = (user) => {
@@ -194,7 +193,7 @@ const AssignInstructor = () => {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`, // ✅ ADD THIS
+            Authorization: `Bearer ${token}`,
           },
         }
       )
@@ -311,7 +310,7 @@ const AssignInstructor = () => {
           method: "DELETE",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`, // ✅ ADD THIS
+            Authorization: `Bearer ${token}`,
           },
         }
       )
@@ -350,7 +349,7 @@ const AssignInstructor = () => {
           method: "DELETE",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`, // ✅ ADD THIS
+            Authorization: `Bearer ${token}`,
           },
         }
       )
@@ -489,56 +488,33 @@ const AssignInstructor = () => {
             </div>
           )}
 
-          {/* Search Bar - Only show when no instructor is selected */}
-          {!selectedUser && (
-            <div className="mb-8 relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                placeholder="Search users..."
-                value={searchQuery}
-                onChange={handleSearchChange}
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/50 backdrop-blur-sm"
-              />
+          {/* Search Bar */}
+          <div className="mb-8 relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
             </div>
-          )}
+            <input
+              type="text"
+              placeholder="Search users by name or email..."
+              value={searchQuery}
+              onChange={handleSearchChange}
+              className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/50 backdrop-blur-sm"
+            />
+          </div>
 
-          {/* User Cards - Only show when no instructor is selected */}
-          {!selectedUser && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-              {displayedUsers.map((user) => (
-                <div
-                  key={user._id}
-                  onClick={() => handleUserSelect(user)}
-                  className="group p-6 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer border-2 border-transparent hover:border-blue-200"
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="p-3 bg-blue-100 rounded-xl">
-                      <UserCircleIcon className="w-8 h-8 text-blue-600" />
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
-                        {user.fullName}
-                      </h2>
-                      <p className="text-gray-500 text-sm">{user.email}</p>
-                      {instructors.some(
-                        (instructor) => instructor.email === user.email
-                      ) && (
-                        <span className="inline-block mt-1 px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
-                          Instructor
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Selected User/Instructor Section */}
+          {/* Back button when user is selected */}
           {selectedUser && (
+            <button
+              onClick={() => setSelectedUser(null)}
+              className="mb-4 flex items-center text-blue-600 hover:text-blue-800 transition-colors"
+            >
+              <ArrowLeftIcon className="w-5 h-5 mr-2" />
+              Back to all users
+            </button>
+          )}
+
+          {/* Main Content */}
+          {selectedUser ? (
             <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
               <div className="flex items-center justify-between mb-6">
                 <div>
@@ -690,6 +666,199 @@ const AssignInstructor = () => {
                   </button>
                 </div>
               </div>
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+              {/* Users Table */}
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        Name
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        Email
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        Status
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {currentUsers.length > 0 ? (
+                      currentUsers.map((user) => (
+                        <tr
+                          key={user._id}
+                          className="hover:bg-gray-50 transition-colors"
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="flex-shrink-0 h-10 w-10">
+                                <UserCircleIcon className="h-10 w-10 text-gray-400" />
+                              </div>
+                              <div className="ml-4">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {user.fullName}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">
+                              {user.email}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {instructors.some(
+                              (instructor) => instructor.email === user.email
+                            ) ? (
+                              <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                Instructor
+                              </span>
+                            ) : (
+                              <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                Potential Instructor
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button
+                              onClick={() => handleUserSelect(user)}
+                              className="text-blue-600 hover:text-blue-900 mr-4 flex items-center"
+                            >
+                              <PencilSquareIcon className="w-4 h-4 mr-1" />
+                              Manage
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan="4"
+                          className="px-6 py-4 text-center text-sm text-gray-500"
+                        >
+                          {isLoading
+                            ? "Loading users..."
+                            : "No users found matching your criteria"}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              {filteredUsers.length > usersPerPage && (
+                <div className="bg-gray-50 px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+                  <div className="flex-1 flex justify-between sm:hidden">
+                    <button
+                      onClick={() =>
+                        setCurrentPage(Math.max(1, currentPage - 1))
+                      }
+                      disabled={currentPage === 1}
+                      className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                    >
+                      Previous
+                    </button>
+                    <button
+                      onClick={() =>
+                        setCurrentPage(Math.min(totalPages, currentPage + 1))
+                      }
+                      disabled={currentPage === totalPages}
+                      className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                    >
+                      Next
+                    </button>
+                  </div>
+                  <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm text-gray-700">
+                        Showing{" "}
+                        <span className="font-medium">
+                          {indexOfFirstUser + 1}
+                        </span>{" "}
+                        to{" "}
+                        <span className="font-medium">
+                          {Math.min(indexOfLastUser, filteredUsers.length)}
+                        </span>{" "}
+                        of{" "}
+                        <span className="font-medium">
+                          {filteredUsers.length}
+                        </span>{" "}
+                        results
+                      </p>
+                    </div>
+                    <div>
+                      <nav
+                        className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
+                        aria-label="Pagination"
+                      >
+                        <button
+                          onClick={() =>
+                            setCurrentPage(Math.max(1, currentPage - 1))
+                          }
+                          disabled={currentPage === 1}
+                          className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                        >
+                          <span className="sr-only">Previous</span>
+                          <ArrowLeftIcon
+                            className="h-5 w-5"
+                            aria-hidden="true"
+                          />
+                        </button>
+                        {Array.from(
+                          { length: totalPages },
+                          (_, i) => i + 1
+                        ).map((page) => (
+                          <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                              currentPage === page
+                                ? "z-10 bg-blue-50 border-blue-500 text-blue-600"
+                                : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        ))}
+                        <button
+                          onClick={() =>
+                            setCurrentPage(
+                              Math.min(totalPages, currentPage + 1)
+                            )
+                          }
+                          disabled={currentPage === totalPages}
+                          className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                        >
+                          <span className="sr-only">Next</span>
+                          <ArrowLeftIcon
+                            className="h-5 w-5 transform rotate-180"
+                            aria-hidden="true"
+                          />
+                        </button>
+                      </nav>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

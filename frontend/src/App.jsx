@@ -43,6 +43,7 @@ import LecturerCustomSchedule from "./pages/LecturerCustomSchedule";
 import SuperadminDashboard from "./pages/superadmin/SuperadminDashboard";
 import GenerateTimetable from "./pages/superadmin/schedule/GenerateTimetable";
 import ViewSchedulesPage from "./pages/superadmin/ViewSchedulesPage";
+import ScheduleConflicts from "./pages/superadmin/schedule/ScheduleConflicts";
 
 function App() {
   return (
@@ -70,6 +71,7 @@ function App() {
       <Route path="/eventcourse" element={<CreateEventCourse />} />
       <Route path="/forgot-password" element={<UpdatePassword />} />
       <Route path="/locations" element={<LocationManager />} />
+      <Route path="/student/courses" element={<StudentCourses />} />
       <Route
         path="/generate-reports-assign"
         element={<GenerateReportAssignManager />}
@@ -112,6 +114,10 @@ function App() {
         element={<GenerateTimetable />}
       />
       <Route path="/superadmin/schedule/view" element={<ViewSchedulesPage />} />
+      <Route
+        path="/superadmin/schedule/conflicts"
+        element={<ScheduleConflicts />}
+      />
     </Routes>
   );
 }

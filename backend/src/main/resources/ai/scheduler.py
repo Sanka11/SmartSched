@@ -1,6 +1,6 @@
 import random
 from copy import deepcopy
-from fetch_data import fetch_all_sessions
+from fetch_data import fetch_all_sessions, fetch_events
 from pymongo import MongoClient
 import os
 from dotenv import load_dotenv
@@ -44,7 +44,7 @@ def calculate_fitness(timetable):
     schedule_map = defaultdict(list)
 
     for session in timetable:
-        key = (session["module_id"], session["group_id"], session["day"], session["start_time"], session["end_time"])
+        key = (session["day"], session["start_time"], session["end_time"])
         schedule_map[key].append(session)
 
     for sessions in schedule_map.values():
@@ -62,7 +62,12 @@ def calculate_fitness(timetable):
                 penalty += 10
             rooms.add(s["location"])
 
+        # ✅ NEW: Penalize overlapping sessions regardless of source
+        if len(sessions) > 1:
+            penalty += 5 * (len(sessions) - 1)  # Penalize each overlap
+
     return penalty
+
 
 # === Conflict-Free Slot Assignment ===
 def assign_conflict_free_slots(sessions):
