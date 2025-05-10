@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import api from "../../../services/api";
 import { toast } from "react-hot-toast";
 import { TailSpin } from "react-loader-spinner";
@@ -15,6 +15,7 @@ export default function GenerateTimetable() {
   const [selectedGroup, setSelectedGroup] = useState("");
   const [progress, setProgress] = useState(0);
   const [progressMessage, setProgressMessage] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
   const user = JSON.parse(localStorage.getItem("user"));
 
@@ -58,6 +59,21 @@ export default function GenerateTimetable() {
       setSelectedEmails([]);
     }
   }, [bulkType, users]);
+
+  const filteredUsers = users.filter(
+    (user) => user.role === selectedRole || bulkType === "all"
+  );
+
+  const searchedUsers = useMemo(() => {
+    if (!searchTerm) return filteredUsers;
+    const term = searchTerm.toLowerCase();
+    return filteredUsers.filter(
+      (user) =>
+        user.fullName.toLowerCase().includes(term) ||
+        user.email.toLowerCase().includes(term) ||
+        (user.groupName && user.groupName.toLowerCase().includes(term))
+    );
+  }, [filteredUsers, searchTerm]);
 
   const handleSelectChange = (e) => {
     setSelectedEmails(Array.from(e.target.selectedOptions, (opt) => opt.value));
@@ -155,10 +171,6 @@ export default function GenerateTimetable() {
     }
   };
 
-  const filteredUsers = users.filter(
-    (user) => user.role === selectedRole || bulkType === "all"
-  );
-
   return (
     <div className="flex bg-gray-50 min-h-screen">
       <DynamicSidebar user={user} />
@@ -216,12 +228,46 @@ export default function GenerateTimetable() {
               </div>
             </div>
 
-            {/* User Selection Card */}
+            {/* User Selection Card with Search */}
             <div className="bg-gray-50 p-5 rounded-lg border border-gray-200">
               <h2 className="text-lg font-semibold text-gray-800 mb-3">
                 User Selection
               </h2>
               <div>
+                <div className="mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Search Users
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Search by name, email, or group..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full px-4 py-2 border rounded-md bg-white text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-10"
+                    />
+                    {searchTerm && (
+                      <button
+                        onClick={() => setSearchTerm("")}
+                        className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   {selectedEmails.length} user(s) selected
                 </label>
@@ -231,15 +277,22 @@ export default function GenerateTimetable() {
                   onChange={handleSelectChange}
                   className="w-full px-3 py-2 border rounded-md bg-white text-gray-700 h-40 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
-                  {filteredUsers.map((user) => (
-                    <option
-                      key={user._id}
-                      value={user.email}
-                      className="text-gray-700 hover:bg-blue-50"
-                    >
-                      {user.fullName} ({user.email})
+                  {searchedUsers.length > 0 ? (
+                    searchedUsers.map((user) => (
+                      <option
+                        key={user._id}
+                        value={user.email}
+                        className="text-gray-700 hover:bg-blue-50"
+                      >
+                        {user.fullName} ({user.email})
+                        {user.groupName && ` - ${user.groupName}`}
+                      </option>
+                    ))
+                  ) : (
+                    <option disabled className="text-gray-500">
+                      No users found matching "{searchTerm}"
                     </option>
-                  ))}
+                  )}
                 </select>
               </div>
             </div>
